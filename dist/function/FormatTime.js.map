@@ -1,0 +1,1 @@
+{"version":3,"file":"FormatTime.js","sourceRoot":"","sources":["../../../src/function/FormatTime.ts"],"names":[],"mappings":";;;;;;AAAA,oDAA4B;AAErB,MAAM,aAAa,GAAG,CAAC,OAAe,EAAU,EAAE;IACvD,OAAO,gBAAM;SACV,GAAG,CAAC,OAAO,GAAG,IAAI,CAAC;SACnB,MAAM,CAAC,OAAO,GAAG,IAAI,CAAC,CAAC,CAAC,UAAU,CAAC,CAAC,CAAC,OAAO,CAAC,CAAC;AACnD,CAAC,CAAC;AAJW,QAAA,aAAa,iBAIxB"}
