@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+# Host
+Host: https://www.folody.xyz
