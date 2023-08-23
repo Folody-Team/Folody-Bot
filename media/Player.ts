@@ -89,6 +89,7 @@ class CorePlayer extends EventEmitter {
     });
 
     this.ffmpeg = ffmpeg(this.playable)
+      .inputFormat("mp3")
       .inputOption('-re')
       .addOption('-loglevel', '0')
       .addOption('-preset', 'ultrafast')
@@ -118,17 +119,26 @@ class CorePlayer extends EventEmitter {
         end: false,
       })
       .audioChannels(2)
-      .audioFrequency(48000)
       .format('s16le')
-      .audioBitrate('164k')
+      .audioBitrate('192k')
+      .audioFrequency(47999)
       .audioFilters(
-        `volume=0.5`,
+        [`volume=0.8`, `apulsator=hz=0.051`]
       );
 
       this.ffmpeg.run();
       this.opusStream?.pipe(this.audioStream as Audio, {
         end: false,
       });
+  }
+
+  public stop() {
+    if (this.ffmpeg) {
+			this.opusStream?.destroy();
+			this.audioStream?.destroy();
+			this.ffmpeg.kill('SIGINT');
+			this.ffmpeg = undefined;
+		}
   }
 }
 

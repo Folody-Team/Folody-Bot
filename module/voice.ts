@@ -122,7 +122,8 @@ export class VoiceConnection {
 
     this.shard.on('message', (raw) => {
 			const { op, d } = JSON.parse(raw as unknown as string);
-      // đổi sang hex có đc ko :))) ếu est ô
+      console.log(op);
+
 			switch (op) {
 				case 0x000002:
 					this.ssrc = d.ssrc;

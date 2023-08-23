@@ -14,8 +14,8 @@ export class Udp {
 
   private blank = Buffer.alloc(74);
   private keepAliveCounter = 0;
-  private readonly keepAliveInterval: NodeJS.Timeout;
-  private readonly keepAliveBuffer: Buffer;
+  private  keepAliveInterval: NodeJS.Timeout;
+  private  keepAliveBuffer: Buffer;
 
   public udp = createSocket('udp4');
   /**
@@ -29,7 +29,7 @@ export class Udp {
     this.keepAliveInterval = setInterval(() => this.keepAlive(), KEEP_ALIVE_INTERVAL);
    
   }
-// connect trước r keepalive sau
+
   private keepAlive() {
 		this.keepAliveBuffer.writeUInt16LE(this.keepAliveCounter, 0);
 		this.udp.send(this.keepAliveBuffer, 0, this.keepAliveBuffer.length,  this.voiceConnection.port, this.voiceConnection.ip);
@@ -76,7 +76,6 @@ export class Udp {
         
       }
     )
-   
 
   }
 
@@ -86,6 +85,15 @@ export class Udp {
 		if (this.nonce > max_int32bit) this.nonce = 0;
 		nonceBuffer.writeUInt32BE(this.nonce, 0);
 		return nonceBuffer;
+	}
+
+  public break() {
+		this.ready = false;
+		this.udp?.disconnect();
+    clearInterval(this.keepAliveInterval as NodeJS.Timer);
+
+    this.keepAliveBuffer = Buffer.alloc(8);
+    this.keepAliveCounter = 0;
 	}
 
   public sendFrame(chunk: any) {
@@ -99,13 +107,13 @@ export class Udp {
       this.voiceConnection.ip,
       (err: any, bytes: any) => {
        
-      } // vẫn đang gửi bth ảo
+      }
     );
     
 		this.audioPacketizer.onFrameSent();
   }
 
   public message(message: any) {
-    // console.log(message) đây là packet khi bot nghe
+    // console.log(message)
   }
 }

@@ -1,13 +1,36 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Guild, EmbedBuilder, Client, Events, WebSocketShard } from "discord.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, Client, Events, WebSocketShard } from "discord.js";
 import path from "path";
-import { WebSocket } from 'ws';
 import { Music } from "../function/Music";
-import fs from 'fs';
-import { createSocket } from "dgram";
 import { VoiceConnection } from "../module/voice";
 import { Player } from "../media/Player";
 
+function musicPlay(url: string, queue: any, music: Music, guild: string) {
+  music.api.download(url as string).then(stream => {
+    console.log(stream)
+    const player = Player.create(stream, (queue?.voice as VoiceConnection).udp)
+    player.once('spawnProcess', () => {
+      queue?.voice.setSpeaking(true);
+    })
 
+    player.once('finish', () => {
+      queue?.voice.setSpeaking(false);
+
+      if(queue?.data.length == 1) {
+        queue?.data.splice(0, queue?.data.length);
+        queue?.voice.shard.close();
+        queue?.voice.udp.break();
+        music.data.delete(guild)
+      } else {
+        queue?.data.shift();
+        
+        musicPlay(queue?.data[0].url, queue, music, guild);
+
+      }
+    })
+
+    player.play();
+  })
+}
 export default {
   data: new SlashCommandBuilder()
     .setName(path.basename(__filename).replace(/\.[^/.]+$/, ""))
@@ -18,13 +41,12 @@ export default {
     const guild = interaction.guildId;
 
     if (!music.data.has(guild as string)) {
-      music.createQueue(guild as string);
-      await music.addSong(guild as string, url as string);
       const channel = interaction.guild?.members.cache.get((interaction.member as any).user.id)?.voice.channel?.id as string;
       const gateway = client.guilds.cache.get(guild as string)?.shard as WebSocketShard;
+      music.createQueue(guild as string);
 
-      const voiceConnection = new VoiceConnection(client);
-
+      await music.addSong(guild as string, url as string);
+      const queue = music.data.get(guild as string)
       gateway.send({
         op: 2 << 1,
         d: {
@@ -33,59 +55,21 @@ export default {
           self_mute: false,
           self_deaf: true,
         }
-      })
-      const playing = (music.data.get(guild as string) as any)[0]
+      });
+      
+      const playing = (queue as any).data[0]
 
       client.on(Events.Raw, (packet) => {
         if (packet.t == 'VOICE_STATE_UPDATE') {
-          voiceConnection.session(packet.d.session_id)
-          
+          queue?.voice.session(packet.d.session_id)         
         }
         if (packet.t == 'VOICE_SERVER_UPDATE') {
-          voiceConnection.init(guild as string, client.user?.id as string, packet.d.token)
-          voiceConnection.connect(`wss://${packet.d.endpoint}/?v=4`)
+          queue?.voice.init(guild as string, client.user?.id as string, packet.d.token)
+          queue?.voice.connect(`wss://${packet.d.endpoint}/?v=4`)
           
-          music.api.download(playing.url as string).then(stream => {
-            console.log(stream)
-            const player = Player.create(stream, voiceConnection.udp)
-            player.once('spawnProcess', () => {
-              voiceConnection.setSpeaking(true);
-            })
-
-            player.once('finish', () => {
-              voiceConnection.setSpeaking(false);
-            })
-
-
-            player.play();
-    
-    
-          })
+          musicPlay(playing.url as string, queue, music, guild as string);
         }
-
-      })
-
-      client.on(Events.VoiceStateUpdate, (_, __) => {
-        // gateway.send({
-
-        // })
-      })
-
-      // const connection = joinVoiceChannel({
-      //   channelId: interaction.guild?.members.cache.get((interaction.member as any).user.id)?.voice.channel?.id as string,
-      //   guildId: guild as string,
-      //   adapterCreator: (interaction.guild as Guild).voiceAdapterCreator,
-      // });
-
-      // const player = createAudioPlayer({
-      //   behaviors: {
-      //     noSubscriber: NoSubscriberBehavior.Pause,
-      //   },
-      // });
-
-      
-      
-
+      }) 
       interaction.reply({
         embeds: [
           new EmbedBuilder()
@@ -93,9 +77,24 @@ export default {
             .setThumbnail(playing.info.image as string)
         ]
       })
-      // player.on(AudioPlayerStatus.Playing, () => {
-      //   console.log(true)
-      // })
+    } else { 
+      const song = await music.addSong(guild as string, url as string);    
+      const queue = music.data.get(guild as string);
+      
+      if(queue?.data.length == 0) {
+        const playing = (queue as any).data[0];
+        musicPlay(playing.url as string, queue, music, guild as string);
+        interaction.reply({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(playing.info.title as string)
+              .setThumbnail(playing.info.image as string)
+          ]
+        })
+      } else {
+        interaction.reply(`Added ${song}`);
+      }
+      
     }
 
   }

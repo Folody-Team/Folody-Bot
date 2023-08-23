@@ -2,7 +2,7 @@ import { Udp } from "../module/udp";
 import { Base } from "./Base";
 
 export class Packetizer extends Base {
-  private magic = (48000/100)*2
+  private magic = (47999/100)*2
   constructor(connection: Udp) {
     super(connection, 0x78);
   }
