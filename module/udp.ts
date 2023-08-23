@@ -10,6 +10,7 @@ export class Udp {
   public voiceConnection: VoiceConnection;
   public nonce!: number;
   public audioPacketizer: Packetizer;
+  public ready = false;
 
   private blank = Buffer.alloc(74);
   private keepAliveCounter = 0;
@@ -46,6 +47,8 @@ export class Udp {
       const ip = data.subarray(8, data.indexOf(0, 8)).toString('utf-8');
       const port = data.readUint16BE(data.length-2);
       this.voiceConnection.protocol(ip, port);
+
+      setImmediate(() => this.keepAlive()).unref();
       // Handle packer này xong thì set event cho cái kia
       this.udp.on('message', this.message);
     });
@@ -62,6 +65,7 @@ export class Udp {
 		this.blank.writeUInt16BE(70, 2);
 		this.blank.writeUInt32BE(this.voiceConnection.ssrc, 4);
 
+    
     this.udp.send(
       this.blank, 
       0,
@@ -72,7 +76,7 @@ export class Udp {
         
       }
     )
-    setImmediate(() => this.keepAlive());
+   
 
   }
 
@@ -85,6 +89,7 @@ export class Udp {
 	}
 
   public sendFrame(chunk: any) {
+    if (!this.ready) return;
     const packet = this.audioPacketizer.createPacket(chunk);
 		this.udp.send(
       packet, 
@@ -93,7 +98,7 @@ export class Udp {
       this.voiceConnection.port,
       this.voiceConnection.ip,
       (err: any, bytes: any) => {
-       console.log(err, bytes)
+       
       } // vẫn đang gửi bth ảo
     );
     

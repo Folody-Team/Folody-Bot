@@ -13,9 +13,10 @@ export class VoiceConnection {
   public secretKey!: Uint8Array;
   public udp = new Udp(this);
 
+  private code: number = 0;
   private interval: string | number | NodeJS.Timeout | undefined;
   private sessionId: string | undefined;
-  private missed = 0;
+  private missed = 0x000000;
   private token!: string;
 
   /**
@@ -30,30 +31,18 @@ export class VoiceConnection {
    * 
    * @param interval 
    */
-  private hearbeat(interval: number) {
-    if(this.interval) {
-      clearInterval(this.interval);
-      this.interval = undefined;
-    }
-
-    
-    if(interval > 0) {
-      this.interval = setInterval(() => {
-        if (this.missed >=  0x000003) {
-					this.shard.close();
-          this.udp.udp.disconnect();
-					this.hearbeat(-1);
-				}
-
-        this.missed++
-        this.shard.send(JSON.stringify({
-          op: 0x000003,
-          d: Date.now()
-        }))
-      }, interval).unref()
-    }
-   
-  }
+	private hearbeat(interval: number) {
+    console.log('Set Heartbeat', interval);
+		this.interval = setInterval(() => {
+			console.log('Heartbeat', interval);
+			this.shard.send(
+				JSON.stringify({
+					op: 0x000003,
+					d: Date.now(),
+				}),
+			);
+		}, interval).unref();
+	}
 
   /**
    * 
@@ -95,7 +84,10 @@ export class VoiceConnection {
     }))
   }
   private secret(key: Uint8Array) {
-    this.secretKey = new Uint8Array(key)
+    this.secretKey = new Uint8Array(key);
+    if (this.udp) {
+			this.udp.ready = true;
+		}
   }
 
   /**
@@ -107,7 +99,7 @@ export class VoiceConnection {
 
     this.shard.on('open', () => {
       this.shard.send(JSON.stringify({
-        op: 0x000000,
+        op: this.code,
         d: {
           server_id: this.guildId,
           user_id: this.userId,
@@ -115,6 +107,7 @@ export class VoiceConnection {
           token: this.token,
         }
       }))
+      
     })
 
     this.shard.on('error', (error) => {
@@ -122,30 +115,34 @@ export class VoiceConnection {
     })
 
     this.shard.on('close', (code, reas) => {
-      console.log(`${code}: ${reas}`);
+      clearInterval(this.interval);
+			this.interval = undefined;
     });
     
 
     this.shard.on('message', (raw) => {
-      const { op, d } = JSON.parse(raw as unknown as string);
-
-      console.log(d)
-      switch(op) {
-        case 0x000002 << 0:
-         this.ssrc = d.ssrc;
-         this.port = d.port;
-         this.ip = d.ip;
-
-        this.udp.genesis();
-        case 0x000002 << 2:
-          this.hearbeat(d.heartbeat_interval);
-        case 0x000002 << 1:
-          this.secret(d.secret_key);
-        case 0x000003 << 1:
-          break;
-      }
+			const { op, d } = JSON.parse(raw as unknown as string);
+      // đổi sang hex có đc ko :))) ếu est ô
+			switch (op) {
+				case 0x000002:
+					this.ssrc = d.ssrc;
+					this.port = d.port;
+					this.ip = d.ip;
+					this.udp.genesis();
+					break;
+				case 0x000008:
+					this.hearbeat(d.heartbeat_interval);
+					break;
+				case 0x000004:
+					this.secret(d.secret_key);
+					break;
+				case 0x000006:
+					console.log('Heartbeat ACK', d);
+					break;
+			}
 
     })
+
   }
 
   public setSpeaking(speaking: boolean) {

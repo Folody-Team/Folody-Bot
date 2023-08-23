@@ -43,7 +43,8 @@ export class Audio extends Writable {
 	}
 
 
-	public _destroy() {
+	// @ts-ignore
+	override destroy() {
 		this.udp = undefined;
 		super.destroy();
 	}
