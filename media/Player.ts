@@ -8,6 +8,7 @@ import net from "net";
 import fs from "fs";
 import path from "path";
 import stream from "stream";
+// import * as util from "ntsuspend"
 
 // cre: Elysia
 class UnixStream {
@@ -16,7 +17,7 @@ class UnixStream {
   public url: string;
   public socketPath: string;
 
-  constructor (stream: stream.Stream, onSocket: ((socket: net.Socket) => void) | undefined) {
+  constructor(stream: stream.Stream, onSocket: ((socket: net.Socket) => void) | undefined) {
     if (process.platform === 'win32') {
       const pipePrefix = '\\\\.\\pipe\\';
       const pipeName = `node-webrtc.${++this.counter}.sock`;
@@ -32,7 +33,7 @@ class UnixStream {
     try {
       fs.statSync(this.socketPath)
       fs.unlinkSync(this.socketPath)
-    } catch (err) {}
+    } catch (err) { }
     const server = net.createServer(onSocket)
     stream.on('finish', () => {
       server.close()
@@ -41,21 +42,24 @@ class UnixStream {
   }
 }
 
-function StreamInput (stream: stream.Readable) {
+function StreamInput(stream: stream.Readable) {
   return new UnixStream(stream, socket => stream.pipe(socket))
 }
 
-function StreamOutput (stream: stream.Writable) {
+function StreamOutput(stream: stream.Writable) {
   return new UnixStream(stream, socket => socket.pipe(stream))
 }
 export { StreamOutput, StreamInput };
 
-class CorePlayer extends EventEmitter {
+export class CorePlayer extends EventEmitter {
   public playable!: string | Readable;
   public ffmpeg!: FfmpegCommand | undefined;
   public udp!: Udp;
   public audioStream!: Audio;
   public opusStream!: prism.opus.Encoder;
+  
+  private isPaused: boolean = false;
+  private cachedDuration: number = 0;
 
   constructor(playable: string | Readable, udp: Udp, ffmpegPath?: {
     ffmpeg: string;
@@ -73,7 +77,7 @@ class CorePlayer extends EventEmitter {
 
   }
 
-  public play() {
+  public play(seek?: string | number) {
     this.audioStream = new Audio(
       this.udp as Udp,
     );
@@ -111,7 +115,7 @@ class CorePlayer extends EventEmitter {
         }
         this.emit('error', err, stdout, stderr);
       })
-      .on('start', (commandLine) => {
+      .on('start', (commandLine, ...another) => {
         this.emit('spawnProcess', commandLine);
       })
       .output(StreamOutput(this.opusStream).url, {
@@ -124,26 +128,52 @@ class CorePlayer extends EventEmitter {
       .audioFilters(
         [`volume=0.8`]
       );
-      
-      
-      this.ffmpeg.run();
-      
-      
-      // this.ffmpeg.ffprobe((err, data) => {
-      //   console.log(data.format.)
-      // })
-      this.opusStream?.pipe(this.audioStream as Audio, {
-        end: false,
-      });
+    if(seek) {
+      this.ffmpeg.seekInput(this.cachedDuration)
+    }
+    this.ffmpeg.run();
+    this.opusStream?.pipe(this.audioStream as Audio, {
+      end: false,
+    });
+    this.ffmpeg.duration
+    this.udp.voiceConnection.player = this
   }
   
   public stop() {
     if (this.ffmpeg) {
-			this.opusStream?.destroy();
-			this.audioStream?.destroy();
-			this.ffmpeg.kill('SIGINT');
-			this.ffmpeg = undefined;
-		}
+      this.opusStream?.destroy();
+      this.audioStream?.destroy();
+      this.ffmpeg.kill('SIGINT');
+      this.ffmpeg = undefined;
+    }
+  }
+
+  public pause() {
+    if (!this.ffmpeg)
+      return null
+   
+    
+    this.isPaused = true;
+    this.cachedDuration = Date.now() - this.audioStream.startTime;
+    this.stop()
+  }
+  resume() {
+    if (!this.ffmpeg)
+      return this
+
+    this.udp.voiceConnection.setSpeaking(true)
+    this.play(this.currentTime);
+    this.isPaused = false;
+    this.audioStream.startTime = Date.now() - this.cachedDuration;
+  }
+
+  get currentTime() {
+    if (this.audioStream.startTime == 0) return 0;
+    if (this.isPaused == true) {
+      return this.cachedDuration / 1000;
+    } else {
+      return (Date.now() - this.audioStream.startTime) / 1000;
+    }
   }
 }
 

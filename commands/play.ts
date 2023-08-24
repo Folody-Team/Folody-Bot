@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, Client, Events, WebSocketShard } from "discord.js";
 import path from "path";
-import { Music } from "../function/Music";
+import { Music, queue } from "../function/Music";
 import { VoiceConnection } from "../module/voice";
 import { Player } from "../media/Player";
 
@@ -25,16 +25,6 @@ function musicPlay(
         queue?.data.splice(0, queue?.data.length);
         queue?.voice.shard.close();
         queue?.voice.udp.break();
-       
-        // gateway.send({
-        //   op: 2 << 1,
-        //   d: {
-        //     guild_id: guild,
-        //     channel_id: channel,
-        //     self_mute: false,
-        //     self_deaf:  true,
-        //   }
-        // });
         music.data.delete(guild)
       } else {
         queue?.data.shift();
@@ -50,7 +40,6 @@ function musicPlay(
 
       }
     })
-
     player.play();
   })
 }
@@ -67,7 +56,7 @@ export default {
     if (!music.data.has(guild as string)) {
       music.createQueue(guild as string);
       await music.addSong(guild as string, url as string);
-      const queue = music.data.get(guild as string)
+      const queue = music.data.get(guild as string)!
       gateway.send({
         op: 2 << 1,
         d: {
