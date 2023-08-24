@@ -6,6 +6,8 @@ export class Audio extends Writable {
 	count: number;
 	sleepTime: number;
 	startTime: number = 0;
+	inQueueData: any[] = []
+	isPause: boolean = false
 
 	constructor(udp: Udp) {
 		super();
@@ -23,7 +25,11 @@ export class Audio extends Writable {
 		this.count++;
 		if (!this.startTime) this.startTime = Date.now();
 
-		this.udp.sendFrame(chunk);
+		if (!this.isPause) {
+			this.udp.sendFrame(chunk);
+		} else {
+			this.inQueueData.push(chunk)
+		}
 
 		let next =
 			(this.count + 1) * this.sleepTime - (Date.now() - this.startTime);
@@ -41,7 +47,23 @@ export class Audio extends Writable {
 		}, next);
 	}
 
-
+	public pause(pause: boolean) {
+		if (pause) {
+			this.isPause = pause
+		} else {
+			// pause is false
+			if (pause != this.isPause) {
+				// pause is true but this.pause is false
+				while (true) {
+					const i = this.inQueueData.shift()
+					if (!i) return
+					// push to discord
+					if (!this.udp) return;
+					this.udp.sendFrame(i)
+				}
+			}
+		}
+	}
 	// @ts-ignore
 	override destroy() {
 		this.udp = undefined;

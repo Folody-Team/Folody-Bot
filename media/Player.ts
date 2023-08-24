@@ -57,7 +57,7 @@ export class CorePlayer extends EventEmitter {
   public udp!: Udp;
   public audioStream!: Audio;
   public opusStream!: prism.opus.Encoder;
-  
+
   private isPaused: boolean = false;
   private cachedDuration: number = 0;
 
@@ -128,7 +128,7 @@ export class CorePlayer extends EventEmitter {
       .audioFilters(
         [`volume=0.8`]
       );
-    if(seek) {
+    if (seek) {
       this.ffmpeg.seekInput(this.cachedDuration)
     }
     this.ffmpeg.run();
@@ -138,7 +138,7 @@ export class CorePlayer extends EventEmitter {
     this.ffmpeg.duration
     this.udp.voiceConnection.player = this
   }
-  
+
   public stop() {
     if (this.ffmpeg) {
       this.opusStream?.destroy();
@@ -151,20 +151,19 @@ export class CorePlayer extends EventEmitter {
   public pause() {
     if (!this.ffmpeg)
       return null
-   
-    
+
     this.isPaused = true;
     this.cachedDuration = Date.now() - this.audioStream.startTime;
-    this.stop()
+    this.audioStream.pause(true)
   }
   resume() {
     if (!this.ffmpeg)
       return this
 
     this.udp.voiceConnection.setSpeaking(true)
-    this.play(this.currentTime);
     this.isPaused = false;
     this.audioStream.startTime = Date.now() - this.cachedDuration;
+    this.audioStream.pause(false)
   }
 
   get currentTime() {
