@@ -31,18 +31,17 @@ export class VoiceConnection {
    * 
    * @param interval 
    */
-	private hearbeat(interval: number) {
-    console.log('Set Heartbeat', interval);
-		this.interval = setInterval(() => {
-			console.log('Heartbeat', interval);
-			this.shard.send(
-				JSON.stringify({
-					op: 0x000003,
-					d: Date.now(),
-				}),
-			);
-		}, interval).unref();
-	}
+  private hearbeat(interval: number) {
+    this.interval = setInterval(() => {
+      console.log('Heartbeat', interval);
+      this.shard.send(
+        JSON.stringify({
+          op: 0x000003,
+          d: Date.now(),
+        }),
+      );
+    }, interval).unref();
+  }
 
   /**
    * 
@@ -70,7 +69,6 @@ export class VoiceConnection {
    * @param port 
    */
   public protocol(selfIP: string, port: number) {
-    console.log(selfIP, port)
     this.shard.send(JSON.stringify({
       op: 0x000001,
       d: {
@@ -86,8 +84,8 @@ export class VoiceConnection {
   private secret(key: Uint8Array) {
     this.secretKey = new Uint8Array(key);
     if (this.udp) {
-			this.udp.ready = true;
-		}
+      this.udp.ready = true;
+    }
   }
 
   /**
@@ -107,7 +105,7 @@ export class VoiceConnection {
           token: this.token,
         }
       }))
-      
+
     })
 
     this.shard.on('error', (error) => {
@@ -116,39 +114,36 @@ export class VoiceConnection {
 
     this.shard.on('close', (code, reas) => {
       clearInterval(this.interval);
-			this.interval = undefined;
+      this.interval = undefined;
     });
-    
+
 
     this.shard.on('message', (raw) => {
-			const { op, d } = JSON.parse(raw as unknown as string);
-      console.log(op);
-
-			switch (op) {
-				case 0x000002:
-					this.ssrc = d.ssrc;
-					this.port = d.port;
-					this.ip = d.ip;
-					this.udp.genesis();
-					break;
-				case 0x000008:
-					this.hearbeat(d.heartbeat_interval);
-					break;
-				case 0x000004:
-					this.secret(d.secret_key);
-					break;
-				case 0x000006:
-					console.log('Heartbeat ACK', d);
-					break;
-			}
+      const { op, d } = JSON.parse(raw as unknown as string);
+      switch (op) {
+        case 0x000002:
+          this.ssrc = d.ssrc;
+          this.port = d.port;
+          this.ip = d.ip;
+          this.udp.genesis();
+          break;
+        case 0x000008:
+          this.hearbeat(d.heartbeat_interval);
+          break;
+        case 0x000004:
+          this.secret(d.secret_key);
+          break;
+        case 0x000006:
+          break;
+      }
 
     })
 
   }
 
   public setSpeaking(speaking: boolean) {
-		// audio
-		this.shard.send(JSON.stringify({
+    // audio
+    this.shard.send(JSON.stringify({
       op: 5,
       d: {
         delay: 0,
@@ -156,5 +151,5 @@ export class VoiceConnection {
         ssrc: this.ssrc,
       }
     }));
-	}
+  }
 }

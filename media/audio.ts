@@ -11,7 +11,7 @@ export class Audio extends Writable {
 		super();
 		this.udp = udp;
 		this.count = 0;
-		this.sleepTime = 20;
+		this.sleepTime = 10;
 		this.startTime = null;
 	}
 

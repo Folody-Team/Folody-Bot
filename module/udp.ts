@@ -89,7 +89,7 @@ export class Udp {
 
   public break() {
 		this.ready = false;
-		this.udp?.disconnect();
+		this.udp.close();
     clearInterval(this.keepAliveInterval as NodeJS.Timer);
 
     this.keepAliveBuffer = Buffer.alloc(8);
