@@ -8,11 +8,12 @@ import net from "net";
 import fs from "fs";
 import path from "path";
 import stream from "stream";
-// import * as util from "ntsuspend"
+import * as ntsuspend from "ntsuspend"
+import { spawn, ChildProcessWithoutNullStreams } from "child_process"
 
+let counter = 0
 // cre: Elysia
 class UnixStream {
-  private counter = 0;
 
   public url: string;
   public socketPath: string;
@@ -20,13 +21,13 @@ class UnixStream {
   constructor(stream: stream.Stream, onSocket: ((socket: net.Socket) => void) | undefined) {
     if (process.platform === 'win32') {
       const pipePrefix = '\\\\.\\pipe\\';
-      const pipeName = `node-webrtc.${++this.counter}.sock`;
+      const pipeName = `node-webrtc.${++counter}.sock`;
 
       this.socketPath = path.join(pipePrefix, pipeName);
       this.url = this.socketPath;
     }
     else {
-      this.socketPath = './' + (++this.counter) + '.sock'
+      this.socketPath = './' + (++counter) + '.sock'
       this.url = 'unix:' + this.socketPath
     }
 
@@ -52,8 +53,8 @@ function StreamOutput(stream: stream.Writable) {
 export { StreamOutput, StreamInput };
 
 export class CorePlayer extends EventEmitter {
-  public playable!: string | Readable;
-  public ffmpeg!: FfmpegCommand | undefined;
+  public playable!: Readable;
+  public ffmpeg!: ChildProcessWithoutNullStreams | undefined;
   public udp!: Udp;
   public audioStream!: Audio;
   public opusStream!: prism.opus.Encoder;
@@ -61,7 +62,7 @@ export class CorePlayer extends EventEmitter {
   private isPaused: boolean = false;
   private cachedDuration: number = 0;
 
-  constructor(playable: string | Readable, udp: Udp, ffmpegPath?: {
+  constructor(playable: Readable, udp: Udp, ffmpegPath?: {
     ffmpeg: string;
   }) {
     super();
@@ -92,50 +93,28 @@ export class CorePlayer extends EventEmitter {
       this.emit('finishAudio');
     });
 
-    this.ffmpeg = ffmpeg(this.playable)
-      .inputOption('-re')
-      .addOption('-loglevel', '0')
-      .addOption('-preset', 'ultrafast')
-      .addOption('-fflags', 'nobuffer')
-      .addOption('-analyzeduration', '0')
-      .addOption('-flags', 'low_delay')
-      .noVideo()
-      .on('end', () => {
-        this.emit('finish');
-      })
-      .on('error', (err, stdout, stderr) => {
-        this.ffmpeg = undefined;
-        if (
-          err.message.includes(
-            'ffmpeg was killed with signal SIGINT',
-          ) ||
-          err.message.includes('ffmpeg exited with code 255')
-        ) {
-          return;
-        }
-        this.emit('error', err, stdout, stderr);
-      })
-      .on('start', (commandLine, ...another) => {
-        this.emit('spawnProcess', commandLine);
-      })
-      .output(StreamOutput(this.opusStream).url, {
-        end: false,
-      })
-      .audioChannels(2)
-      .format('s16le')
-      .audioBitrate(192)
-      .audioFrequency(47999)
-      .audioFilters(
-        [`volume=0.8`]
-      );
-    if (seek) {
-      this.ffmpeg.seekInput(this.cachedDuration)
+
+    let url = '';
+    if (this.playable instanceof Readable) {
+      url = StreamInput(this.playable as Readable).url
+    } else {
+      url = this.playable;
     }
-    this.ffmpeg.run();
-    this.opusStream?.pipe(this.audioStream as Audio, {
+    const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
+      `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
+      `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `${StreamOutput(this.opusStream).url}`]
+    this.ffmpeg = spawn(`ffmpeg`, opts)
+
+    this.ffmpeg.on("error", console.log)
+    this.ffmpeg.on("message", console.log)
+    this.ffmpeg.on("spawn", () => this.emit("spawnProcess", ""))
+    this.ffmpeg.on("exit", () => this.emit("finish"))
+
+    if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdin)
+
+    this.opusStream?.pipe(this.audioStream!, {
       end: false,
     });
-    this.ffmpeg.duration
     this.udp.voiceConnection.player = this
   }
 
@@ -151,19 +130,23 @@ export class CorePlayer extends EventEmitter {
   public pause() {
     if (!this.ffmpeg)
       return null
-
+    console.log(this.ffmpeg.pid)
+    this.ffmpeg.stdin.write("\x19")
+    if (process.platform === 'win32') ntsuspend.suspend(this.ffmpeg.pid as number);
+    else this.ffmpeg.kill('SIGSTOP');
+    // cứ làm ik =))
     this.isPaused = true;
     this.cachedDuration = Date.now() - this.audioStream.startTime;
-    this.audioStream.pause(true)
   }
   resume() {
     if (!this.ffmpeg)
       return this
-
+    this.ffmpeg.stdin.write("\n")
     this.udp.voiceConnection.setSpeaking(true)
     this.isPaused = false;
     this.audioStream.startTime = Date.now() - this.cachedDuration;
-    this.audioStream.pause(false)
+    if (process.platform === 'win32') ntsuspend.resume(this.ffmpeg.pid as number);
+    else this.ffmpeg.kill('SIGCONT');
   }
 
   get currentTime() {
@@ -177,7 +160,7 @@ export class CorePlayer extends EventEmitter {
 }
 
 export class Player {
-  public static create = (playable: string | Readable, udp: Udp, ffmpegPath?: {
+  public static create = (playable: Readable, udp: Udp, ffmpegPath?: {
     ffmpeg: string;
   }) => {
     return new CorePlayer(playable, udp, ffmpegPath)

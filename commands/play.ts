@@ -15,6 +15,7 @@ function musicPlay(
   music.api.download(url as string).then(stream => {
     const player = Player.create(stream, (queue?.voice as VoiceConnection).udp)
     player.once('spawnProcess', () => {
+      // làm j có event này
       queue?.voice.setSpeaking(true);
     })
 
@@ -49,6 +50,7 @@ export default {
     .setDescription('Play music')
     .addStringOption(option => option.setName('input').setDescription('Enter url')),
   exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
+    interaction.deferReply()
     const url = interaction.options.getString('input')
     const guild = interaction.guildId;
     const channel = interaction.guild?.members.cache.get((interaction.member as any).user.id)?.voice.channel?.id as string;
@@ -86,7 +88,7 @@ export default {
           );
         }
       })
-      interaction.reply({
+      interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setTitle(playing.info.title as string)
@@ -107,7 +109,7 @@ export default {
           gateway
         );
 
-        interaction.reply({
+        interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setTitle(playing.info.title as string)
@@ -115,7 +117,7 @@ export default {
           ]
         })
       } else {
-        interaction.reply(`Added ${song}`);
+        interaction.editReply(`Added ${song}`);
       }
 
     }
