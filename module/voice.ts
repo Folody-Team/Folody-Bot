@@ -1,6 +1,7 @@
 import { Client } from "discord.js";
 import { WebSocket } from 'ws'
 import { Udp } from "./udp";
+import { CorePlayer } from "../media/Player";
 
 export class VoiceConnection {
   public client: Client;
@@ -12,6 +13,7 @@ export class VoiceConnection {
   public port!: number;
   public secretKey!: Uint8Array;
   public udp = new Udp(this);
+  public player?: CorePlayer
 
   private code: number = 0;
   private interval: string | number | NodeJS.Timeout | undefined;

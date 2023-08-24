@@ -1,10 +1,10 @@
-import {Client} from 'discord.js';
-import {create} from 'soundcloud-downloader'
+import { Client } from 'discord.js';
+import { create } from 'soundcloud-downloader'
 import ytdl from 'ytdl-core';
 import "dotenv/config"
 import zlib from 'zlib';
 import crypto from 'crypto';
-import {hideData, showData} from './Cipher';
+import { hideData, showData } from './Cipher';
 import axios from 'axios';
 import { VoiceConnection } from '../module/voice';
 
@@ -17,9 +17,9 @@ type data = {
   url: string,
 }
 
-type queue = {
+export type queue = {
   data: Array<data>,
-  voice: VoiceConnection
+  voice: VoiceConnection,
 }
 export class Music {
   private client: Client;
@@ -51,7 +51,7 @@ export class Music {
   public async createQueue(id: string) {
     const songData = {
       voice: new VoiceConnection(this.client),
-      data: new Array<data>()
+      data: new Array<data>(),
     } as queue
     return this.data.set(id, songData);
   }
@@ -61,7 +61,7 @@ export class Music {
    */
   public async addSong(id: string, input: string) {
     const songInfo = await this.search(input);
-    if(this.data.has(id)) {
+    if (this.data.has(id)) {
       const queue = this.data.get(id);
       queue?.data.push({
         info: {

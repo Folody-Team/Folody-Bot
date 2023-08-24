@@ -5,14 +5,13 @@ export class Audio extends Writable {
 	udp?: Udp;
 	count: number;
 	sleepTime: number;
-	startTime: number | null;
+	startTime: number = 0;
 
 	constructor(udp: Udp) {
 		super();
 		this.udp = udp;
 		this.count = 0;
 		this.sleepTime = 20;
-		this.startTime = null;
 	}
 
 	public _write(chunk: any, encoding: any, callback: any) {
