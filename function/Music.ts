@@ -8,7 +8,7 @@ import { hideData, showData } from './Cipher';
 import axios from 'axios';
 import { VoiceConnection } from '../module/voice';
 
-type data = {
+type SongsData = {
   info: {
     title: string,
     description: string,
@@ -17,14 +17,21 @@ type data = {
   url: string,
 }
 
-export type queue = {
-  data: Array<data>,
+export enum LoopType {
+  None,
+  Queue,
+  Song
+}
+
+export type Queue = {
+  data: Array<SongsData>,
   voice: VoiceConnection,
+  loop: LoopType
 }
 export class Music {
   private client: Client;
 
-  public data = new Map<string, queue>();
+  public data = new Map<string, Queue>();
 
   public api = create({
     clientID: process.env.ID,
@@ -51,8 +58,9 @@ export class Music {
   public async createQueue(id: string) {
     const songData = {
       voice: new VoiceConnection(this.client),
-      data: new Array<data>(),
-    } as queue
+      data: new Array<SongsData>(),
+      loop: LoopType.None
+    } as Queue
     return this.data.set(id, songData);
   }
   /**
@@ -71,7 +79,7 @@ export class Music {
         },
         url: songInfo.permalink_url as string
       })
-      this.data.set(id, queue as queue);
+      this.data.set(id, queue as Queue);
 
       return `${songInfo.title}`;
     }

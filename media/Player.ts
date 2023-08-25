@@ -1,4 +1,3 @@
-import ffmpeg, { FfmpegCommand } from 'fluent-ffmpeg';
 import { Udp } from "../module/udp";
 import { Readable } from 'stream';
 import { EventEmitter } from "events";
@@ -94,12 +93,12 @@ export class CorePlayer extends EventEmitter {
     });
 
 
+
+  
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
-      `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `${StreamOutput(this.opusStream).url}`]
-    this.ffmpeg = spawn(`ffmpeg`, opts, {
-      stdio: ['pipe']
-    })
+      `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `pipe:1`]
+    this.ffmpeg = spawn(`ffmpeg`, opts)
 
     this.ffmpeg.on("error", console.log)
     this.ffmpeg.on("message", console.log)
@@ -109,6 +108,9 @@ export class CorePlayer extends EventEmitter {
 
     if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdin)
 
+    this.ffmpeg.stdout.pipe(this.opusStream, {
+      end:false
+    })
     this.opusStream?.pipe(this.audioStream!, {
       end: false,
     });
@@ -121,6 +123,7 @@ export class CorePlayer extends EventEmitter {
       this.audioStream?.destroy();
       this.ffmpeg.kill('SIGINT');
       this.ffmpeg = undefined;
+      this.udp.voiceConnection.player = undefined
     }
   }
 
@@ -130,7 +133,7 @@ export class CorePlayer extends EventEmitter {
     
     this.playable.unpipe(this.ffmpeg.stdin)
     await this.opusStream.unpipe(this.audioStream)
-    
+
     this.isPaused = true;
     this.cachedDuration = Date.now() - this.audioStream.startTime;
   }
