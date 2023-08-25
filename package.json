@@ -3,7 +3,25 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "exports": {
+    "node": {
+      "require": "./lib/suspend.cjs",
+      "module": "./lib/suspend.mjs",
+      "import": "./lib/suspend.mjs"
+    }
+  },
+  "cpu": [
+    "x64",
+    "ia32"
+  ],
+  "os": [
+    "win32"
+  ],
   "scripts": {
+    "install": "node --unhandled-rejections=strict ./lib/install.cjs",
+    "build": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 x64 ia32",
+    "build:x64": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 x64",
+    "build:ia32": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 ia32",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node index.ts"
   },
@@ -22,6 +40,7 @@
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.2",
     "libsodium-wrappers": "^0.7.11",
+    "node-addon-api": "^7.0.0",
     "node-fetch": "^2.6.0",
     "ntsuspend": "^1.0.2",
     "opusscript": "^0.0.8",

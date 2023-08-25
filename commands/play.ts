@@ -50,7 +50,6 @@ export default {
     .setDescription('Play music')
     .addStringOption(option => option.setName('input').setDescription('Enter url')),
   exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
-    interaction.deferReply()
     const url = interaction.options.getString('input')
     const guild = interaction.guildId;
     const channel = interaction.guild?.members.cache.get((interaction.member as any).user.id)?.voice.channel?.id as string;
@@ -88,7 +87,7 @@ export default {
           );
         }
       })
-      interaction.editReply({
+      interaction.reply({
         embeds: [
           new EmbedBuilder()
             .setTitle(playing.info.title as string)
@@ -109,7 +108,7 @@ export default {
           gateway
         );
 
-        interaction.editReply({
+        interaction.reply({
           embeds: [
             new EmbedBuilder()
               .setTitle(playing.info.title as string)
@@ -117,7 +116,7 @@ export default {
           ]
         })
       } else {
-        interaction.editReply(`Added ${song}`);
+        interaction.reply(`Added ${song}`);
       }
 
     }

@@ -10,7 +10,7 @@ import path from "path";
 import stream from "stream";
 import * as ntsuspend from "ntsuspend"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process"
-
+import * as util from '../lib/suspend'
 let counter = 0
 // cre: Elysia
 class UnixStream {
@@ -103,14 +103,16 @@ export class CorePlayer extends EventEmitter {
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
       `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `${StreamOutput(this.opusStream).url}`]
-    this.ffmpeg = spawn(`ffmpeg`, opts)
+    this.ffmpeg = spawn(`ffmpeg`, opts, {
+      stdio: ['pipe']
+    })
 
     this.ffmpeg.on("error", console.log)
     this.ffmpeg.on("message", console.log)
     this.ffmpeg.on("spawn", () => this.emit("spawnProcess", ""))
     this.ffmpeg.on("exit", () => this.emit("finish"))
 
-    if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdin)
+    if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdio[0])
 
     this.opusStream?.pipe(this.audioStream!, {
       end: false,
@@ -130,8 +132,8 @@ export class CorePlayer extends EventEmitter {
   public pause() {
     if (!this.ffmpeg)
       return null
-    console.log(this.ffmpeg.pid)
-    this.ffmpeg.stdin.write("\x19")
+    this.ffmpeg.stdin.write("\u0003")
+    util.PrintOK.suspend(this.ffmpeg.pid);
     if (process.platform === 'win32') ntsuspend.suspend(this.ffmpeg.pid as number);
     else this.ffmpeg.kill('SIGSTOP');
     // cứ làm ik =))
