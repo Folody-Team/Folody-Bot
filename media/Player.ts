@@ -10,9 +10,9 @@ import path from "path";
 import stream from "stream";
 import * as ntsuspend from "ntsuspend"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process"
-import * as util from '../lib/suspend'
 let counter = 0
 // cre: Elysia
+
 class UnixStream {
 
   public url: string;
@@ -94,12 +94,6 @@ export class CorePlayer extends EventEmitter {
     });
 
 
-    let url = '';
-    if (this.playable instanceof Readable) {
-      url = StreamInput(this.playable as Readable).url
-    } else {
-      url = this.playable;
-    }
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
       `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `${StreamOutput(this.opusStream).url}`]
@@ -112,7 +106,8 @@ export class CorePlayer extends EventEmitter {
     this.ffmpeg.on("spawn", () => this.emit("spawnProcess", ""))
     this.ffmpeg.on("exit", () => this.emit("finish"))
 
-    if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdio[0])
+
+    if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdin)
 
     this.opusStream?.pipe(this.audioStream!, {
       end: false,
@@ -129,26 +124,25 @@ export class CorePlayer extends EventEmitter {
     }
   }
 
-  public pause() {
+  public async pause() {
     if (!this.ffmpeg)
       return null
-    this.ffmpeg.stdin.write("\u0003")
-    util.PrintOK.suspend(this.ffmpeg.pid);
-    if (process.platform === 'win32') ntsuspend.suspend(this.ffmpeg.pid as number);
-    else this.ffmpeg.kill('SIGSTOP');
-    // cứ làm ik =))
+    
+    this.playable.unpipe(this.ffmpeg.stdin)
+    await this.opusStream.unpipe(this.audioStream)
+    
     this.isPaused = true;
     this.cachedDuration = Date.now() - this.audioStream.startTime;
   }
-  resume() {
+  public async resume() {
     if (!this.ffmpeg)
       return this
-    this.ffmpeg.stdin.write("\n")
-    this.udp.voiceConnection.setSpeaking(true)
+
+    this.playable.pipe(this.ffmpeg.stdin) 
+    await this.opusStream.pipe(this.audioStream)
+
     this.isPaused = false;
     this.audioStream.startTime = Date.now() - this.cachedDuration;
-    if (process.platform === 'win32') ntsuspend.resume(this.ffmpeg.pid as number);
-    else this.ffmpeg.kill('SIGCONT');
   }
 
   get currentTime() {
