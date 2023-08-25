@@ -124,6 +124,7 @@ export class CorePlayer extends EventEmitter {
       this.audioStream?.destroy();
       this.ffmpeg.kill('SIGINT');
       this.ffmpeg = undefined;
+      this.udp.voiceConnection.player = undefined
     }
   }
 
@@ -131,7 +132,7 @@ export class CorePlayer extends EventEmitter {
     if (!this.ffmpeg)
       return null
     console.log(this.ffmpeg.pid)
-    this.ffmpeg.stdin.write("\x19")
+    this.ffmpeg.stdin.write("c")
     if (process.platform === 'win32') ntsuspend.suspend(this.ffmpeg.pid as number);
     else this.ffmpeg.kill('SIGSTOP');
     // cứ làm ik =))
