@@ -3,7 +3,25 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "exports": {
+    "node": {
+      "require": "./lib/suspend.cjs",
+      "module": "./lib/suspend.mjs",
+      "import": "./lib/suspend.mjs"
+    }
+  },
+  "cpu": [
+    "x64",
+    "ia32"
+  ],
+  "os": [
+    "win32"
+  ],
   "scripts": {
+    "install": "node --unhandled-rejections=strict ./lib/install.cjs",
+    "build": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 x64 ia32",
+    "build:x64": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 x64",
+    "build:ia32": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 ia32",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node index.ts"
   },
@@ -16,14 +34,12 @@
     "dgram": "^1.0.1",
     "discord.js": "^14.11.0",
     "dotenv": "^16.3.1",
-    "eloquent-ffmpeg": "^0.14.0",
     "events": "^3.3.0",
     "express": "^4.18.2",
     "ffmpeg-static": "^5.2.0",
-    "fluent-ffmpeg": "^2.1.2",
     "libsodium-wrappers": "^0.7.11",
+    "node-addon-api": "^7.0.0",
     "node-fetch": "^2.6.0",
-    "ntsuspend": "^1.0.2",
     "opusscript": "^0.0.8",
     "prism-media": "^1.3.5",
     "sha1": "^1.1.1",
@@ -33,7 +49,6 @@
   "devDependencies": {
     "@types/cookie": "^0.4.0",
     "@types/express": "^4.17.17",
-    "@types/fluent-ffmpeg": "^2.1.21",
     "@types/libsodium-wrappers": "^0.7.10",
     "@types/node-fetch": "^2.5.7",
     "ts-node": "^10.9.1",

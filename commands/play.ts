@@ -1,12 +1,12 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, Client, Events, WebSocketShard } from "discord.js";
 import path from "path";
-import { Music, queue } from "../function/Music";
+import { LoopType, Music, Queue } from "../function/Music";
 import { VoiceConnection } from "../module/voice";
 import { Player } from "../media/Player";
 
 function musicPlay(
   url: string,
-  queue: any,
+  queue: Queue,
   music: Music,
   guild: string,
   channel: string,
@@ -22,13 +22,18 @@ function musicPlay(
     player.once('finish', () => {
       queue?.voice.setSpeaking(false);
 
-      if (queue?.data.length == 1) {
+      if (queue?.data.length == 1 && !(queue.loop == LoopType.Queue || queue.loop == LoopType.Song)) {
         queue?.data.splice(0, queue?.data.length);
         queue?.voice.shard.close();
         queue?.voice.udp.break();
         music.data.delete(guild)
-      } else {
-        queue?.data.shift();
+      } else if (queue.loop == LoopType.Queue || queue.loop == LoopType.None) {
+        const lastQueueSong = queue?.data.shift()
+        if (queue.loop == LoopType.Queue) {
+          if (lastQueueSong) queue.data.push({
+            ...lastQueueSong
+          })
+        };
 
         musicPlay(
           queue?.data[0].url,
@@ -39,6 +44,17 @@ function musicPlay(
           gateway
         );
 
+      } else if (queue.loop == LoopType.Song) {
+        musicPlay(
+          queue?.data[0].url,
+          queue,
+          music,
+          guild,
+          channel,
+          gateway
+        );
+      } else {
+        console.log(queue.loop)
       }
     })
     player.play();
@@ -50,7 +66,6 @@ export default {
     .setDescription('Play music')
     .addStringOption(option => option.setName('input').setDescription('Enter url')),
   exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
-    interaction.deferReply()
     const url = interaction.options.getString('input')
     const guild = interaction.guildId;
     const channel = interaction.guild?.members.cache.get((interaction.member as any).user.id)?.voice.channel?.id as string;
@@ -88,7 +103,8 @@ export default {
           );
         }
       })
-      interaction.editReply({
+
+      interaction.reply({
         embeds: [
           new EmbedBuilder()
             .setTitle(playing.info.title as string)
@@ -109,7 +125,9 @@ export default {
           gateway
         );
 
-        interaction.editReply({
+
+        interaction.reply({
+
           embeds: [
             new EmbedBuilder()
               .setTitle(playing.info.title as string)
@@ -117,7 +135,9 @@ export default {
           ]
         })
       } else {
-        interaction.editReply(`Added ${song}`);
+
+        interaction.reply(`Added ${song}`);
+
       }
 
     }

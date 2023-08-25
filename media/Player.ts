@@ -1,4 +1,3 @@
-import ffmpeg, { FfmpegCommand } from 'fluent-ffmpeg';
 import { Udp } from "../module/udp";
 import { Readable } from 'stream';
 import { EventEmitter } from "events";
@@ -10,9 +9,9 @@ import path from "path";
 import stream from "stream";
 import * as ntsuspend from "ntsuspend"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process"
-
 let counter = 0
 // cre: Elysia
+
 class UnixStream {
 
   public url: string;
@@ -94,15 +93,11 @@ export class CorePlayer extends EventEmitter {
     });
 
 
-    let url = '';
-    if (this.playable instanceof Readable) {
-      url = StreamInput(this.playable as Readable).url
-    } else {
-      url = this.playable;
-    }
+
+  
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
-      `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `${StreamOutput(this.opusStream).url}`]
+      `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `pipe:1`]
     this.ffmpeg = spawn(`ffmpeg`, opts)
 
     this.ffmpeg.on("error", console.log)
@@ -110,8 +105,12 @@ export class CorePlayer extends EventEmitter {
     this.ffmpeg.on("spawn", () => this.emit("spawnProcess", ""))
     this.ffmpeg.on("exit", () => this.emit("finish"))
 
+
     if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdin)
 
+    this.ffmpeg.stdout.pipe(this.opusStream, {
+      end:false
+    })
     this.opusStream?.pipe(this.audioStream!, {
       end: false,
     });
@@ -124,29 +123,29 @@ export class CorePlayer extends EventEmitter {
       this.audioStream?.destroy();
       this.ffmpeg.kill('SIGINT');
       this.ffmpeg = undefined;
+      this.udp.voiceConnection.player = undefined
     }
   }
 
-  public pause() {
+  public async pause() {
     if (!this.ffmpeg)
       return null
-    console.log(this.ffmpeg.pid)
-    this.ffmpeg.stdin.write("\x19")
-    if (process.platform === 'win32') ntsuspend.suspend(this.ffmpeg.pid as number);
-    else this.ffmpeg.kill('SIGSTOP');
-    // cứ làm ik =))
+    
+    this.playable.unpipe(this.ffmpeg.stdin)
+    await this.opusStream.unpipe(this.audioStream)
+
     this.isPaused = true;
     this.cachedDuration = Date.now() - this.audioStream.startTime;
   }
-  resume() {
+  public async resume() {
     if (!this.ffmpeg)
       return this
-    this.ffmpeg.stdin.write("\n")
-    this.udp.voiceConnection.setSpeaking(true)
+
+    this.playable.pipe(this.ffmpeg.stdin) 
+    await this.opusStream.pipe(this.audioStream)
+
     this.isPaused = false;
     this.audioStream.startTime = Date.now() - this.cachedDuration;
-    if (process.platform === 'win32') ntsuspend.resume(this.ffmpeg.pid as number);
-    else this.ffmpeg.kill('SIGCONT');
   }
 
   get currentTime() {
