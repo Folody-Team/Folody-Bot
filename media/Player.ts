@@ -1,4 +1,3 @@
-import ffmpeg, { FfmpegCommand } from 'fluent-ffmpeg';
 import { Udp } from "../module/udp";
 import { Readable } from 'stream';
 import { EventEmitter } from "events";
@@ -94,15 +93,10 @@ export class CorePlayer extends EventEmitter {
     });
 
 
-    let url = '';
-    if (this.playable instanceof Readable) {
-      url = StreamInput(this.playable as Readable).url
-    } else {
-      url = this.playable;
-    }
+  
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
-      `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `${StreamOutput(this.opusStream).url}`]
+      `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `pipe:1`]
     this.ffmpeg = spawn(`ffmpeg`, opts)
 
     this.ffmpeg.on("error", console.log)
@@ -112,6 +106,9 @@ export class CorePlayer extends EventEmitter {
 
     if (this.playable instanceof Readable) this.playable.pipe(this.ffmpeg.stdin)
 
+    this.ffmpeg.stdout.pipe(this.opusStream, {
+      end:false
+    })
     this.opusStream?.pipe(this.audioStream!, {
       end: false,
     });
