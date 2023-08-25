@@ -1,6 +1,6 @@
-import {Events, Client as Discord, SlashCommandBuilder, REST, Routes} from 'discord.js';
+import { Events, Client as Discord, SlashCommandBuilder, REST, Routes } from 'discord.js';
 import { Client } from '../../Client';
-import {Music} from '../../function/Music';
+import { Music } from '../../function/Music';
 import fs from 'fs';
 import path from 'path';
 
@@ -32,37 +32,37 @@ export default {
           active(slashFolders[l])
           active(slashFolders[r])
         }
-  
+
         ++l;
         --r;
       }
     }
 
-    const mid = (l: number, r: number): void =>  {
-      if((l+r)/2 > 3) {
-        mid(l, (slashFolders.length-1)/2);
-        mid((slashFolders.length-1)/2+1, r);
+    const mid = (l: number, r: number): void => {
+      if ((l + r) / 2 > 3) {
+        mid(l, (slashFolders.length - 1) / 2);
+        mid((slashFolders.length - 1) / 2 + 1, r);
       } else {
         return loop(l, r);
       }
     }
 
-    if(slashFolders.length == 1) {
+    if (slashFolders.length == 1) {
       await active(slashFolders[0])
     } else {
-      await mid(0, slashFolders.length-1);
+      await mid(0, slashFolders.length - 1);
     }
 
     (async () => {
       try {
         console.log(`Started refreshing ${commands.length} application (/) commands.`);
-    
+
         // The put method is used to fully refresh all commands in the guild with the current set
         const data = await rest.put(
           Routes.applicationCommands(client?.application?.id as string),
           { body: commands },
         );
-    
+
         console.log(`Successfully reloaded ${commands.length} application (/) commands.`);
       } catch (error) {
         // And of course, make sure you catch and log any errors!
@@ -71,6 +71,6 @@ export default {
     })();
     return 0;
   }
-  
+
 
 }
