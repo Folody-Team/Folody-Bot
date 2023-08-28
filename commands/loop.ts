@@ -17,6 +17,14 @@ export default {
                     { name: "song", value: "song" }
                 )
         ),
+    
+    /**
+     * 
+     * @param interaction 
+     * @param music 
+     * @param client 
+     * @returns 
+     */
     exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
         const guild = interaction.guildId;
         const type_option = interaction.options.getString("input", true)

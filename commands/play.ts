@@ -4,6 +4,15 @@ import { LoopType, Music, Queue } from "../function/Music";
 import { VoiceConnection } from "../module/voice";
 import { Player } from "../media/Player";
 
+/**
+ * 
+ * @param url 
+ * @param queue 
+ * @param music 
+ * @param guild 
+ * @param channel 
+ * @param gateway 
+ */
 function musicPlay(
   url: string,
   queue: Queue,
@@ -23,9 +32,20 @@ function musicPlay(
       queue?.voice.setSpeaking(false);
 
       if (queue?.data.length == 1 && !(queue.loop == LoopType.Queue || queue.loop == LoopType.Song)) {
+        player.stop()
+        gateway.send({
+          op: 2 << 1,
+          d: {
+            guild_id: null,
+            channel_id: null,
+            self_mute: null,
+            self_deaf: null,
+          }
+        })
         queue?.data.splice(0, queue?.data.length);
+        
         queue?.voice.shard.close();
-        queue?.voice.udp.break();
+        // queue?.voice.udp.udp.disconnect();
         music.data.delete(guild)
       } else if (queue.loop == LoopType.Queue || queue.loop == LoopType.None) {
         const lastQueueSong = queue?.data.shift()
@@ -64,9 +84,19 @@ export default {
   data: new SlashCommandBuilder()
     .setName(path.basename(__filename).replace(/\.[^/.]+$/, ""))
     .setDescription('Play music')
-    .addStringOption(option => option.setName('input').setDescription('Enter url')),
+    .addStringOption(option => option.setName('input').setDescription('Enter url').setRequired(true)),
+  /**
+   * 
+   * @param interaction 
+   * @param music 
+   * @param client 
+   * @returns 
+   */
   exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
-    const url = interaction.options.getString('input')
+    const url = interaction.options.getString('input');
+    if (!url?.match(/^https?:\/\/(soundcloud\.com|snd\.sc)\/(.*)$/)) {
+      return await interaction.reply('You must enter soundcloud link!')
+    }
     const guild = interaction.guildId;
     const channel = interaction.guild?.members.cache.get((interaction.member as any).user.id)?.voice.channel?.id as string;
     const gateway = client.guilds.cache.get(guild as string)?.shard as WebSocketShard;
@@ -104,11 +134,11 @@ export default {
         }
       })
 
-      interaction.reply({
+      await interaction.reply({
         embeds: [
           new EmbedBuilder()
-            .setTitle(playing.info.title as string)
-            .setThumbnail(playing.info.image as string)
+            .setTitle(playing.info.title)
+            .setDescription(`${(playing.info.description as string)[0].match(/[!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/) ? `\\${playing.info.description}` : playing.info.description}`)
         ]
       })
     } else {
@@ -116,27 +146,45 @@ export default {
       const queue = music.data.get(guild as string);
 
       if (queue?.data.length == 0) {
+        gateway.send({
+          op: 2 << 1,
+          d: {
+            guild_id: guild,
+            channel_id: channel,
+            self_mute: false,
+            self_deaf: true,
+          }
+        });
         const playing = (queue as any).data[0];
-        musicPlay(
-          playing.url as string,
-          queue, music,
-          guild as string,
-          channel as string,
-          gateway
-        );
+        client.on(Events.Raw, (packet) => {
+          if (packet.t == 'VOICE_STATE_UPDATE') {
+            queue?.voice.session(packet.d.session_id)
+          }
+          if (packet.t == 'VOICE_SERVER_UPDATE') {
+            queue?.voice.init(guild as string, client.user?.id as string, packet.d.token)
+            queue?.voice.connect(`wss://${packet.d.endpoint}/?v=4`)
+  
+            musicPlay(
+              playing.url as string,
+              queue, music,
+              guild as string,
+              channel as string,
+              gateway
+            );
+          }
+        })
 
 
-        interaction.reply({
-
+        await interaction.reply({
           embeds: [
             new EmbedBuilder()
-              .setTitle(playing.info.title as string)
-              .setThumbnail(playing.info.image as string)
+              .setTitle(playing.info.title)
+              .setDescription(`${(playing.info.description as string)[0].match(/[!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/) ? `\\${playing.info.description}` : playing.info.description}`)
           ]
         })
       } else {
 
-        interaction.reply(`Added ${song}`);
+        await interaction.reply(`Added **${song}**`);
 
       }
 

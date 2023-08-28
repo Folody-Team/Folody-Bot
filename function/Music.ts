@@ -74,7 +74,7 @@ export class Music {
       queue?.data.push({
         info: {
           title: songInfo.title as string,
-          description: songInfo.description as string,
+          description: songInfo.user?.username as string,
           image: songInfo.artwork_url as string,
         },
         url: songInfo.permalink_url as string

@@ -6,6 +6,13 @@ export default {
     data: new SlashCommandBuilder()
         .setName(path.basename(__filename).replace(/\.[^/.]+$/, ""))
         .setDescription('Resume music'),
+        
+    /**
+     * 
+     * @param interaction 
+     * @param music 
+     * @param client 
+     */
     exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
         const url = interaction.options.getString('input')
         const guild = interaction.guildId;
