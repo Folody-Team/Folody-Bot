@@ -22,7 +22,7 @@ function musicPlay(
   gateway: WebSocketShard
 ) {
   music.api.download(url as string).then(stream => {
-    const player = Player.create(stream, (queue?.voice as VoiceConnection).udp)
+    const player = Player.create(stream, queue.voice.udp)
     player.once('spawnProcess', () => {
       // làm j có event này
       queue?.voice.setSpeaking(true);
@@ -31,10 +31,13 @@ function musicPlay(
     player.once('finish', () => {
       queue?.voice.setSpeaking(false);
 
-      if (queue?.data.length == 1 && !(queue.loop == LoopType.Queue || queue.loop == LoopType.Song)) {
+      console.log("finish", queue)
+
+      if (queue.data.length == 1 && queue.loop == LoopType.None) {
         player.stop()
+        console.log(queue)
         gateway.send({
-          op: 2 << 1,
+          op: 4,
           d: {
             guild_id: null,
             channel_id: null,
@@ -42,9 +45,18 @@ function musicPlay(
             self_deaf: null,
           }
         })
-        queue?.data.splice(0, queue?.data.length);
-        
-        queue?.voice.shard.close();
+        queue.voice.shard.send(JSON.stringify({
+          op: 4,
+          d: {
+            guild_id: null,
+            channel_id: null,
+            self_mute: null,
+            self_deaf: null,
+          }
+        }))
+        queue.data.splice(0, queue.data.length);
+
+        queue.voice.shard.close();
         // queue?.voice.udp.udp.disconnect();
         music.data.delete(guild)
       } else if (queue.loop == LoopType.Queue || queue.loop == LoopType.None) {
@@ -114,7 +126,7 @@ export default {
         }
       });
 
-      const playing = (queue as any).data[0]
+      const playing = queue.data[0]
 
       client.on(Events.Raw, (packet) => {
         if (packet.t == 'VOICE_STATE_UPDATE') {
@@ -155,7 +167,7 @@ export default {
             self_deaf: true,
           }
         });
-        const playing = (queue as any).data[0];
+        const playing = queue.data[0];
         client.on(Events.Raw, (packet) => {
           if (packet.t == 'VOICE_STATE_UPDATE') {
             queue?.voice.session(packet.d.session_id)
@@ -163,7 +175,7 @@ export default {
           if (packet.t == 'VOICE_SERVER_UPDATE') {
             queue?.voice.init(guild as string, client.user?.id as string, packet.d.token)
             queue?.voice.connect(`wss://${packet.d.endpoint}/?v=4`)
-  
+
             musicPlay(
               playing.url as string,
               queue, music,
