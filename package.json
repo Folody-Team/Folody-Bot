@@ -2,11 +2,9 @@
   "name": "folody",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "build": "tsc  && uglifyjs-folder ./build  --output ./index.min.js",
-    "build:x64": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 x64",
-    "build:ia32": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 ia32",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node build/index.js",
     "dev": "ts-node index.ts"
@@ -24,7 +22,6 @@
     "express": "^4.18.2",
     "ffmpeg-static": "^5.2.0",
     "libsodium-wrappers": "^0.7.11",
-    "node-addon-api": "^7.0.0",
     "node-fetch": "^2.6.0",
     "opusscript": "^0.0.8",
     "prism-media": "^1.3.5",
