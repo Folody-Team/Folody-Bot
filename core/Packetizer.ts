@@ -2,23 +2,20 @@ import { Udp } from "../module/udp";
 import { Base } from "./Base";
 
 export class Packetizer extends Base {
-  private magic = (47999/100)*2
-  constructor(connection: Udp) {
-    super(connection, 0x78);
-  }
+	private magic = (47999 / 100) * 2
+	constructor(connection: Udp) {
+		super(connection, 0x78);
+	}
 
-  public sendFrame(frame: any): void {
+	public sendFrame(frame: any): void {
 		const packet = this.createPacket(frame);
 		this.connection.udp.send(
-      packet, 
-      0, 
-      packet.length,
-      this.connection.voiceConnection.port,
-      this.connection.voiceConnection.ip,
-      (err: any, bytes: any) => {
-        
-      }
-    );
+			packet,
+			0,
+			packet.length,
+			this.connection.voiceConnection.port,
+			this.connection.voiceConnection.ip,
+		);
 		this.onFrameSent();
 	}
 

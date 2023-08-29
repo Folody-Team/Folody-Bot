@@ -93,7 +93,7 @@ export class CorePlayer extends EventEmitter {
 
 
 
-  
+
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
       `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `pipe:1`]
@@ -112,7 +112,7 @@ export class CorePlayer extends EventEmitter {
     })
 
     this.ffmpeg.stdout.pipe(this.opusStream, {
-      end:false
+      end: false
     })
     this.opusStream?.pipe(this.audioStream!, {
       end: false,
@@ -133,7 +133,7 @@ export class CorePlayer extends EventEmitter {
   public async pause() {
     if (!this.ffmpeg)
       return null
-    
+
     this.playable.unpipe(this.ffmpeg.stdin)
     await this.opusStream.unpipe(this.audioStream)
 
@@ -144,7 +144,7 @@ export class CorePlayer extends EventEmitter {
     if (!this.ffmpeg)
       return this
 
-    this.playable.pipe(this.ffmpeg.stdin) 
+    this.playable.pipe(this.ffmpeg.stdin)
     await this.opusStream.pipe(this.audioStream)
 
     this.isPaused = false;

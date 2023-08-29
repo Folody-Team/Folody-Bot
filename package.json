@@ -3,20 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "exports": {
-    "node": {
-      "require": "./lib/suspend.cjs",
-      "module": "./lib/suspend.mjs",
-      "import": "./lib/suspend.mjs"
-    }
-  },
-  "cpu": [
-    "x64",
-    "ia32"
-  ],
-  "os": [
-    "win32"
-  ],
   "scripts": {
     "install": "node --unhandled-rejections=strict ./lib/install.cjs",
     "build": "tsc  && uglifyjs-folder ./build  --output ./index.min.js",
