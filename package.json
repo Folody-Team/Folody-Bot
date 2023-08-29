@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "install": "node --unhandled-rejections=strict ./lib/install.cjs",
     "build": "tsc  && uglifyjs-folder ./build  --output ./index.min.js",
     "build:x64": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 x64",
     "build:ia32": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 ia32",
