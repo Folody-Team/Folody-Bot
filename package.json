@@ -9,6 +9,7 @@
     "build:x64": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 x64",
     "build:ia32": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe ./lib/build.ps1 ia32",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node build/index.js",
     "dev": "ts-node index.ts"
   },
   "keywords": [],
