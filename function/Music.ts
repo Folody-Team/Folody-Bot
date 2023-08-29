@@ -1,4 +1,6 @@
 import { Client } from 'discord.js';
+// @ts-ignore 
+// @ts-nocheck
 import { create } from 'soundcloud-downloader'
 import ytdl from 'ytdl-core';
 import "dotenv/config"

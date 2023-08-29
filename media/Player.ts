@@ -7,7 +7,6 @@ import net from "net";
 import fs from "fs";
 import path from "path";
 import stream from "stream";
-import * as ntsuspend from "ntsuspend"
 import { spawn, ChildProcessWithoutNullStreams } from "child_process"
 let counter = 0
 // cre: Elysia

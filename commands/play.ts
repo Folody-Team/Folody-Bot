@@ -33,15 +33,6 @@ function musicPlay(
 
       if (queue?.data.length == 1 && !(queue.loop == LoopType.Queue || queue.loop == LoopType.Song)) {
         player.stop()
-        gateway.send({
-          op: 2 << 1,
-          d: {
-            guild_id: null,
-            channel_id: null,
-            self_mute: null,
-            self_deaf: null,
-          }
-        })
         queue?.data.splice(0, queue?.data.length);
         
         queue?.voice.shard.close();
