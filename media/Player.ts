@@ -97,7 +97,9 @@ export class CorePlayer extends EventEmitter {
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
       `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `pipe:1`]
-    this.ffmpeg = spawn(`ffmpeg`, opts, {
+    
+    
+    this.ffmpeg = spawn(path.join(__dirname, '../../node_modules/ffmpeg-static/ffmpeg'), opts, {
       stdio: ['pipe']
     })
 
