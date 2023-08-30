@@ -9,9 +9,9 @@ import path from "path";
 import stream from "stream";
 import { spawn, ChildProcessWithoutNullStreams } from "child_process"
 let counter = 0
-// cre: Elysia
 
-class UnixStream {
+
+class UnixStream { // cre: Elysia
 
   public url: string;
   public socketPath: string;
@@ -91,9 +91,6 @@ export class CorePlayer extends EventEmitter {
       this.emit('finishAudio');
     });
 
-
-
-
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
       `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `pipe:1`]
@@ -103,28 +100,15 @@ export class CorePlayer extends EventEmitter {
       stdio: ['pipe']
     })
 
-    this.ffmpeg.on("error", console.log)
-    this.ffmpeg.on("message", console.log)
     this.ffmpeg.on("spawn", () => this.emit("spawnProcess", ""))
-    this.ffmpeg.on("close", () => {
-      console.log.bind(console, 'closed')
-      this.emit("finish")
-    })
-    this.ffmpeg.on("exit", () => {
-      console.log.bind(console, 'exited')
-      this.emit("finish")
-    })
+    this.ffmpeg.on("close", () => this.emit('finish'))
 
-
-    if (this.playable instanceof Readable) this.playable.on('data', (chunk) => {
-      (this.ffmpeg as ChildProcessWithoutNullStreams).stdio[0].write(chunk);
-    })
-
-    this.ffmpeg.stdout.pipe(this.opusStream, {
-      end: false
-    })
+    if (this.playable instanceof Readable) 
+      this.playable.pipe((this.ffmpeg as ChildProcessWithoutNullStreams).stdio[0])
+    
+    this.ffmpeg.stdout.pipe(this.opusStream)
     this.opusStream?.pipe(this.audioStream!, {
-      end: false,
+      end: true
     });
     this.udp.voiceConnection.player = this
   }

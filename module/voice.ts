@@ -145,7 +145,6 @@ export class VoiceConnection {
 
   public disconnect() {
     this.shard.close();
-    this.udp.break();
   }
   public setSpeaking(speaking: boolean) {
     // audio

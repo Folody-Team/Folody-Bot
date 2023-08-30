@@ -24,19 +24,15 @@ function musicPlay(
   music.api.download(url as string).then(stream => {
     const player = Player.create(stream, queue.voice.udp)
     player.once('spawnProcess', () => {
-      // làm j có event này
       queue?.voice.setSpeaking(true);
     })
 
-    player.once('finish', () => {
+    player.on('finish', () => {
       console.log("finish")
       queue?.voice.setSpeaking(false);
 
-      
-      
       if (queue.data.length == 1 && queue.loop == LoopType.None) {
         player.stop()
-        console.log(queue)
         gateway.send({
           op: 4,
           d: {
@@ -58,6 +54,18 @@ function musicPlay(
         queue.data.splice(0, queue.data.length);
         queue.voice.disconnect();
         music.data.delete(guild)
+      } else if (queue.data.length > 1 && queue.loop == LoopType.None) {
+        queue.data.shift();
+
+        musicPlay(
+          queue?.data[0].url,
+          queue,
+          music,
+          guild,
+          channel,
+          gateway
+        );
+
       } else if (queue.loop == LoopType.Queue || queue.loop == LoopType.None) {
         const lastQueueSong = queue?.data.shift()
         if (queue.loop == LoopType.Queue) {
