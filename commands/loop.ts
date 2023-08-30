@@ -1,58 +1,57 @@
-import { ChatInputCommandInteraction, Client, SlashCommandBuilder, WebSocketShard } from "discord.js";
-import path from "path"
-import { LoopType, Music } from "../function/Music";
+import Bot from "bot";
+import { SlashCommandBuilder } from "discord.js";
+import Command from "models/command";
+import { Loop } from "module/music";
 
-export default {
-    data: new SlashCommandBuilder()
-        .setName(path.basename(__filename).replace(/\.[^/.]+$/, ""))
-        .setDescription('Loop music')
-        .addStringOption(b =>
-            b
-                .setName("input")
-                .setRequired(true)
-                .setDescription("type of input")
-                .addChoices(
-                    { name: "none", value: "none" },
-                    { name: "queue", value: "queue" },
-                    { name: "song", value: "song" }
-                )
-        ),
-    
-    /**
-     * 
-     * @param interaction 
-     * @param music 
-     * @param client 
-     * @returns 
-     */
-    exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
-        const guild = interaction.guildId;
-        const type_option = interaction.options.getString("input", true)
-        if (!music.data.has(guild as string)) {
-            interaction.reply({
-                content: "Bot not in voice"
-            })
-        } else {
-            const queue = music.data.get(guild as string)!;
-            switch (type_option) {
-                case "none":
-                    queue.loop = LoopType.None
-                    break;
-                case "queue":
-                    queue.loop = LoopType.Queue
-                    break;
-                case "song":
-                    queue.loop = LoopType.Song
-                    break
-                default:
-                    interaction.reply("invalid input")
-                    return
-            }
+const data = new SlashCommandBuilder()
+  .setName("loop")
+  .setDescription("Loop music");
 
-            interaction.reply({
-                content: "Set Loop music success"
-            })
-        }
+data.addStringOption((option) =>
+  option
+    .setName("mode")
+    .setRequired(true)
+    .setDescription("Loop mode")
+    .addChoices(
+      { name: "none", value: "none" },
+      { name: "queue", value: "queue" },
+      { name: "song", value: "song" },
+    ),
+);
 
+export default new Command({
+  data: data,
+  async run(interaction) {
+    const guildID = interaction.guildId;
+    if (!guildID) return;
+    const mode = interaction.options.getString("mode", true);
+    const bot = interaction.client as Bot;
+    const queue = bot.music.queues.get(guildID);
+
+    if (!queue) {
+      interaction.reply({
+        content: "Bot not in voice",
+      });
+      return;
     }
-}
+
+    switch (mode) {
+      case "none":
+        queue.loop = Loop.Off;
+        break;
+      case "queue":
+        queue.loop = Loop.Queue;
+        break;
+      case "song":
+        queue.loop = Loop.Song;
+        break;
+      default:
+        interaction.reply("invalid input");
+        return;
+    }
+
+    interaction.reply({
+      content: `Set loop to ${mode} success`,
+    });
+  },
+});

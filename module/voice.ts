@@ -1,7 +1,7 @@
 import { Client } from "discord.js";
-import { WebSocket } from 'ws'
-import { Udp } from "./udp";
-import { CorePlayer } from "../media/Player";
+import { CorePlayer } from "media/player";
+import { Udp } from "module/udp";
+import { WebSocket } from "ws";
 
 export class VoiceConnection {
   public client: Client;
@@ -13,7 +13,7 @@ export class VoiceConnection {
   public port!: number;
   public secretKey!: Uint8Array;
   public udp = new Udp(this);
-  public player?: CorePlayer
+  public player?: CorePlayer;
 
   private code: number = 0;
   private interval: string | number | NodeJS.Timeout | undefined;
@@ -22,20 +22,20 @@ export class VoiceConnection {
   private token!: string;
 
   /**
-   * 
-   * @param client 
+   *
+   * @param client
    */
   constructor(client: Client) {
     this.client = client;
   }
 
   /**
-   * 
-   * @param interval 
+   *
+   * @param interval
    */
   private hearbeat(interval: number) {
     this.interval = setInterval(() => {
-      console.log('Heartbeat', interval);
+      console.log("Heartbeat", interval);
       this.shard.send(
         JSON.stringify({
           op: 0x000003,
@@ -46,18 +46,18 @@ export class VoiceConnection {
   }
 
   /**
-   * 
-   * @param value 
+   *
+   * @param value
    */
   public session(value: string) {
     this.sessionId = value;
   }
 
   /**
-   * 
-   * @param guildId 
-   * @param userId 
-   * @param token 
+   *
+   * @param guildId
+   * @param userId
+   * @param token
    */
   public init(guildId: string, userId: string, token: string) {
     this.guildId = guildId;
@@ -66,22 +66,24 @@ export class VoiceConnection {
   }
 
   /**
-   * 
-   * @param selfIP 
-   * @param port 
+   *
+   * @param selfIP
+   * @param port
    */
   public protocol(selfIP: string, port: number) {
-    this.shard.send(JSON.stringify({
-      op: 0x000001,
-      d: {
-        protocol: 'udp',
-        data: {
-          address: selfIP,
-          port: port,
-          mode: 'xsalsa20_poly1305_lite',
+    this.shard.send(
+      JSON.stringify({
+        op: 0x000001,
+        d: {
+          protocol: "udp",
+          data: {
+            address: selfIP,
+            port: port,
+            mode: "xsalsa20_poly1305_lite",
+          },
         },
-      }
-    }))
+      }),
+    );
   }
   private secret(key: Uint8Array) {
     this.secretKey = new Uint8Array(key);
@@ -91,36 +93,36 @@ export class VoiceConnection {
   }
 
   /**
-   * 
-   * @param endpoint 
+   *
+   * @param endpoint
    */
   public connect(endpoint: string) {
     this.shard = new WebSocket(endpoint);
 
-    this.shard.on('open', () => {
-      this.shard.send(JSON.stringify({
-        op: this.code,
-        d: {
-          server_id: this.guildId,
-          user_id: this.userId,
-          session_id: this.sessionId,
-          token: this.token,
-        }
-      }))
+    this.shard.on("open", () => {
+      this.shard.send(
+        JSON.stringify({
+          op: this.code,
+          d: {
+            server_id: this.guildId,
+            user_id: this.userId,
+            session_id: this.sessionId,
+            token: this.token,
+          },
+        }),
+      );
+    });
 
-    })
-
-    this.shard.on('error', (error) => {
+    this.shard.on("error", (error) => {
       console.log(error);
-    })
+    });
 
-    this.shard.on('close', (code, reas) => {
+    this.shard.on("close", (code, reas) => {
       clearInterval(this.interval);
       this.interval = undefined;
     });
 
-
-    this.shard.on('message', (raw) => {
+    this.shard.on("message", (raw) => {
       const { op, d } = JSON.parse(raw as unknown as string);
       switch (op) {
         case 0x000002:
@@ -138,9 +140,7 @@ export class VoiceConnection {
         case 0x000006:
           break;
       }
-
-    })
-
+    });
   }
 
   public disconnect() {
@@ -148,13 +148,15 @@ export class VoiceConnection {
   }
   public setSpeaking(speaking: boolean) {
     // audio
-    this.shard.send(JSON.stringify({
-      op: 5,
-      d: {
-        delay: 0,
-        speaking: speaking ? 1 : 0,
-        ssrc: this.ssrc,
-      }
-    }));
+    this.shard.send(
+      JSON.stringify({
+        op: 5,
+        d: {
+          delay: 0,
+          speaking: speaking ? 1 : 0,
+          ssrc: this.ssrc,
+        },
+      }),
+    );
   }
 }

@@ -1,0 +1,6 @@
+{
+    "trailingComma": "all",
+    "plugins": [
+        "prettier-plugin-organize-imports"
+    ]
+}
