@@ -4,7 +4,7 @@
     'include_dirs': ['node_modules/node-addon-api'],
     'conditions': [
       ['OS=="win"', {
-        'sources': ['lib/suspend.cc'],
+        'sources': [''],
       }],
     ],
     'defines': ['NAPI_DISABLE_CPP_EXCEPTIONS'],
