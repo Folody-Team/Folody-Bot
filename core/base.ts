@@ -1,4 +1,4 @@
-import { crypto_secretbox_easy } from "libsodium-wrappers";
+import * as sodium from "libsodium-wrappers";
 import Udp from "modules/udp";
 
 export const max_int16bit = 2 ** 16 - 1;
@@ -88,7 +88,7 @@ export default class Base {
     message: string | Uint8Array,
     nonceBuffer: Buffer,
   ): Uint8Array {
-    return crypto_secretbox_easy(
+    return sodium.crypto_secretbox_easy(
       message,
       nonceBuffer,
       this._connection.voiceConnection.secretKey,
