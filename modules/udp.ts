@@ -1,12 +1,12 @@
 import { max_int32bit } from "core/base";
 import { Packetizer } from "core/packetizer";
 import { createSocket } from "dgram";
-import { VoiceConnection } from "module/voice";
+import { VoiceConnection } from "modules/voice";
 
 const KEEP_ALIVE_INTERVAL = 5e3;
 const MAX_COUNTER_VALUE = 2 ** 32 - 1;
 
-export class Udp {
+export default class Udp {
   public voiceConnection: VoiceConnection;
   public nonce!: number;
   public audioPacketizer: Packetizer;

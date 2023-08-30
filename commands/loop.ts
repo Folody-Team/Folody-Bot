@@ -1,7 +1,7 @@
 import Bot from "bot";
 import { SlashCommandBuilder } from "discord.js";
 import Command from "models/command";
-import { Loop } from "module/music";
+import { Loop } from "modules/music";
 
 const data = new SlashCommandBuilder()
   .setName("loop")

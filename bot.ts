@@ -1,6 +1,6 @@
 import { Client, ClientOptions } from "discord.js";
 import Command from "models/command";
-import { Music } from "module/music";
+import { Music } from "modules/music";
 
 export default class Bot extends Client {
   constructor(options: ClientOptions) {

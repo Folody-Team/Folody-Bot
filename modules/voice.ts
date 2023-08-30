@@ -1,6 +1,6 @@
 import { Client } from "discord.js";
 import { CorePlayer } from "media/player";
-import { Udp } from "module/udp";
+import Udp from "modules/udp";
 import { WebSocket } from "ws";
 
 export class VoiceConnection {

@@ -1,5 +1,5 @@
-import { Udp } from "../module/udp";
-import { Base } from "./base";
+import Base from "core/base";
+import Udp from "modules/udp";
 
 export class Packetizer extends Base {
   private magic = (47999 / 100) * 2;

@@ -1,6 +1,6 @@
 import Bot from "bot";
 import "dotenv/config";
-import { VoiceConnection } from "module/voice";
+import { VoiceConnection } from "modules/voice";
 import * as soundCloudDownloader from "soundcloud-downloader";
 
 interface SongInfo {
@@ -26,12 +26,11 @@ export enum Loop {
 }
 
 class Queue {
-  constructor(data: Array<Song>, voice: VoiceConnection, loop: Loop) {
-    this.data = data;
+  constructor(voice: VoiceConnection, loop: Loop) {
     this.voice = voice;
     this.loop = loop;
   }
-  public readonly data: Array<Song>;
+  public readonly songs: Song[] = [];
   public readonly voice: VoiceConnection;
   public loop: Loop;
 }
@@ -55,17 +54,14 @@ export class Music {
     return await this.api.getInfo(input);
   }
 
-  public async createQueue(id: string) {
+  public createQueue(id: string) {
     return this.queues.set(
       id,
-      new Queue(new Array<Song>(), new VoiceConnection(this.bot), Loop.Off),
+      new Queue(new VoiceConnection(this.bot), Loop.Off),
     );
   }
 
-  public async addSong(
-    guildID: string,
-    input: string,
-  ): Promise<Song | undefined> {
+  public async addSong(guildID: string, input: string): Promise<Song> {
     const queue = this.queues.get(guildID);
     if (!queue) throw new Error("Queue not found");
 
@@ -79,7 +75,7 @@ export class Music {
       },
       result.permalink_url || "",
     );
-    queue.data.push(song);
+    queue.songs.push(song);
     this.queues.set(guildID, queue);
 
     return song;

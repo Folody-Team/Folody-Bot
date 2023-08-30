@@ -1,12 +1,12 @@
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { EventEmitter } from "events";
 import fs from "fs";
+import Udp from "modules/udp";
 import net from "net";
 import path from "path";
 import prism from "prism-media";
 import stream, { Readable } from "stream";
-import { Udp } from "../module/udp";
-import { Audio } from "./audio";
+import Audio from "./audio";
 let counter = 0;
 
 class UnixStream {
@@ -80,8 +80,8 @@ export class CorePlayer extends EventEmitter {
     this.playable = playable;
   }
 
-  public play(seek?: string | number) {
-    this.audioStream = new Audio(this.udp as Udp);
+  public play(seek?: number) {
+    this.audioStream = new Audio(this.udp);
 
     this.opusStream = new prism.opus.Encoder({
       channels: 2,
