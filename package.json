@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc && uglifyjs-folder ./build --output ./index.min.js",
-    "start": "node build/index.js",
-    "dev": "ts-node index"
+    "start": "tsx .",
+    "dev": "tsx watch ."
   },
   "keywords": [],
   "author": "",
