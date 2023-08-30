@@ -1,6 +1,7 @@
 import Bot from "bot";
 import { GatewayIntentBits } from "discord.js";
 import "dotenv/config";
+import loadCommands from "handlers/loadCommand";
 import loadEvents from "handlers/loadEvent";
 
 const bot = new Bot({
@@ -16,3 +17,4 @@ if (process.env.BotToken) bot.login(process.env.BotToken);
 else throw new Error("Token not set");
 
 loadEvents(bot);
+loadCommands(bot);

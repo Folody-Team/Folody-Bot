@@ -20,7 +20,7 @@ data.addStringOption((option) =>
 );
 
 export default new Command({
-  data: data,
+  data,
   async run(interaction) {
     const guildID = interaction.guildId;
     if (!guildID) return;

@@ -5,6 +5,8 @@ import {
   Events,
   SlashCommandBuilder,
   WebSocketShard,
+  bold,
+  inlineCode,
 } from "discord.js";
 import { Player } from "media/player";
 import Command from "models/command";
@@ -145,7 +147,7 @@ export default new Command({
     });
 
     if (queue.songs.length != 0) {
-      interaction.reply(`Added **${song}**`);
+      interaction.reply(`Added ${bold(inlineCode(song.info.title))}`);
       return;
     }
 
