@@ -89,13 +89,14 @@ export class Udp {
 
   public break() {
     this.ready = false;
-    this.udp.close();
+    this.udp.disconnect();
     clearInterval(this.keepAliveInterval);
 
     this.keepAliveBuffer = Buffer.alloc(8);
     this.keepAliveCounter = 0;
   }
 
+  
   public sendFrame(chunk: any) {
     if (!this.ready) return;
     const packet = this.audioPacketizer.createPacket(chunk);

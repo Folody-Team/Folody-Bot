@@ -29,17 +29,18 @@ function musicPlay(
     })
 
     player.once('finish', () => {
+      console.log("finish")
       queue?.voice.setSpeaking(false);
 
-      console.log("finish", queue)
-
+      
+      
       if (queue.data.length == 1 && queue.loop == LoopType.None) {
         player.stop()
         console.log(queue)
         gateway.send({
           op: 4,
           d: {
-            guild_id: null,
+            guild_id: guild,
             channel_id: null,
             self_mute: null,
             self_deaf: null,
@@ -48,16 +49,14 @@ function musicPlay(
         queue.voice.shard.send(JSON.stringify({
           op: 4,
           d: {
-            guild_id: null,
+            guild_id: guild,
             channel_id: null,
             self_mute: null,
             self_deaf: null,
           }
         }))
         queue.data.splice(0, queue.data.length);
-
-        queue.voice.shard.close();
-        // queue?.voice.udp.udp.disconnect();
+        queue.voice.disconnect();
         music.data.delete(guild)
       } else if (queue.loop == LoopType.Queue || queue.loop == LoopType.None) {
         const lastQueueSong = queue?.data.shift()
@@ -135,7 +134,7 @@ export default {
         if (packet.t == 'VOICE_SERVER_UPDATE') {
           queue?.voice.init(guild as string, client.user?.id as string, packet.d.token)
           queue?.voice.connect(`wss://${packet.d.endpoint}/?v=4`)
-
+          
           musicPlay(
             playing.url as string,
             queue, music,
@@ -157,43 +156,44 @@ export default {
       const song = await music.addSong(guild as string, url as string);
       const queue = music.data.get(guild as string);
 
+      console.log(music.data)
       if (queue?.data.length == 0) {
-        gateway.send({
-          op: 2 << 1,
-          d: {
-            guild_id: guild,
-            channel_id: channel,
-            self_mute: false,
-            self_deaf: true,
-          }
-        });
-        const playing = queue.data[0];
-        client.on(Events.Raw, (packet) => {
-          if (packet.t == 'VOICE_STATE_UPDATE') {
-            queue?.voice.session(packet.d.session_id)
-          }
-          if (packet.t == 'VOICE_SERVER_UPDATE') {
-            queue?.voice.init(guild as string, client.user?.id as string, packet.d.token)
-            queue?.voice.connect(`wss://${packet.d.endpoint}/?v=4`)
+        // gateway.send({
+        //   op: 2 << 1,
+        //   d: {
+        //     guild_id: guild,
+        //     channel_id: channel,
+        //     self_mute: false,
+        //     self_deaf: true,
+        //   }
+        // });
+        // const playing = queue.data[0];
+        // client.on(Events.Raw, (packet) => {
+        //   if (packet.t == 'VOICE_STATE_UPDATE') {
+        //     queue?.voice.session(packet.d.session_id)
+        //   }
+        //   if (packet.t == 'VOICE_SERVER_UPDATE') {
+        //     queue?.voice.init(guild as string, client.user?.id as string, packet.d.token)
+        //     queue?.voice.connect(`wss://${packet.d.endpoint}/?v=4`)
 
-            musicPlay(
-              playing.url as string,
-              queue, music,
-              guild as string,
-              channel as string,
-              gateway
-            );
-          }
-        })
+        //     musicPlay(
+        //       playing.url as string,
+        //       queue, music,
+        //       guild as string,
+        //       channel as string,
+        //       gateway
+        //     );
+        //   }
+        // })
 
 
-        await interaction.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle(playing.info.title)
-              .setDescription(`${(playing.info.description as string)[0].match(/[!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/) ? `\\${playing.info.description}` : playing.info.description}`)
-          ]
-        })
+        // await interaction.reply({
+        //   embeds: [
+        //     new EmbedBuilder()
+        //       .setTitle(playing.info.title)
+        //       .setDescription(`${(playing.info.description as string)[0].match(/[!"`'#%&,:;<>=@{}~\$\(\)\*\+\/\\\?\[\]\^\|]+/) ? `\\${playing.info.description}` : playing.info.description}`)
+        //   ]
+        // })
       } else {
 
         await interaction.reply(`Added **${song}**`);

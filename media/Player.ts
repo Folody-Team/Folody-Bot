@@ -97,16 +97,23 @@ export class CorePlayer extends EventEmitter {
     const opts = [`-re`, `-i`, "pipe:0", `-y`, `-ac`, `2`, `-b:a`, `192k`, `-ar`,
       `47999`, `-filter:a`, `volume=0.8`, `-vn`, `-loglevel`, `0`, `-preset`, `ultrafast`, `-fflags`, `nobuffer`,
       `-analyzeduration`, `0`, `-flags`, `low_delay`, `-f`, `s16le`, `pipe:1`]
-    
-    
-    this.ffmpeg = spawn(path.join(__dirname, '../../node_modules/ffmpeg-static/ffmpeg'), opts, {
+
+
+    this.ffmpeg = spawn('ffmpeg', opts, {
       stdio: ['pipe']
     })
 
     this.ffmpeg.on("error", console.log)
     this.ffmpeg.on("message", console.log)
     this.ffmpeg.on("spawn", () => this.emit("spawnProcess", ""))
-    this.ffmpeg.on("exit", () => this.emit("finish"))
+    this.ffmpeg.on("close", () => {
+      console.log.bind(console, 'closed')
+      this.emit("finish")
+    })
+    this.ffmpeg.on("exit", () => {
+      console.log.bind(console, 'exited')
+      this.emit("finish")
+    })
 
 
     if (this.playable instanceof Readable) this.playable.on('data', (chunk) => {
