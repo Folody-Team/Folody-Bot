@@ -51,7 +51,7 @@ function playMusic(
             self_deaf: null,
           },
         });
-        queue.voice.shard.send(
+        queue.voice.ws?.send(
           JSON.stringify({
             op: 4,
             d: {
@@ -109,8 +109,8 @@ export default new Command({
       return await interaction.reply("You must enter soundcloud link!");
     }
 
+    if (!interaction.inGuild()) return;
     const guildID = interaction.guildId;
-    if (!guildID) return;
     const bot = interaction.client as Bot;
 
     if (!bot.music.queues.get(guildID)) {
@@ -120,17 +120,7 @@ export default new Command({
     const queue = bot.music.queues.get(guildID)!;
 
     const gateway = bot.guilds.cache.get(guildID)?.shard;
-    if (!gateway) return;
-    await bot.music.addSong(guildID, query);
-    gateway.send({
-      op: 2 << 1,
-      d: {
-        guild_id: guildID,
-        channel_id: interaction.guildId,
-        self_mute: false,
-        self_deaf: true,
-      },
-    });
+    if (!gateway) return interaction.reply("Unknown error");
 
     const song = await bot.music.addSong(guildID, query);
 
@@ -146,7 +136,22 @@ export default new Command({
       }
     });
 
-    if (queue.songs.length != 0) {
+    gateway.send({
+      op: 2 << 1,
+      d: {
+        guild_id: guildID,
+        channel_id: (
+          await interaction.guild!.members.fetch(interaction.user.id)
+        ).voice.channelId,
+        self_mute: false,
+        self_deaf: true,
+      },
+    });
+
+    console.log(queue.songs.length);
+
+    if (queue.songs.length != 1) {
+      // first song added
       interaction.reply(`Added ${bold(inlineCode(song.info.title))}`);
       return;
     }

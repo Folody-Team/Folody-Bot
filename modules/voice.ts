@@ -1,32 +1,32 @@
-import { Client } from "discord.js";
+import Bot from "bot";
 import { CorePlayer } from "media/player";
 import Udp from "modules/udp";
 import { WebSocket } from "ws";
 
 export class VoiceConnection {
-  public client: Client;
-  public shard!: WebSocket;
-  public guildId!: string;
-  public userId!: string;
-  public ssrc!: number;
-  public ip!: string;
-  public port!: number;
-  public secretKey!: Uint8Array;
+  public bot: Bot;
+  public ws?: WebSocket;
+  public guildId?: string;
+  public userId?: string;
+  public ssrc?: number;
+  public ip?: string;
+  public port?: number;
+  public secretKey?: Uint8Array;
   public udp = new Udp(this);
   public player?: CorePlayer;
 
-  private code: number = 0;
-  private interval: string | number | NodeJS.Timeout | undefined;
-  private sessionId: string | undefined;
+  private code = 0;
+  private interval?: NodeJS.Timeout;
+  private sessionId?: string;
   private missed = 0x000000;
-  private token!: string;
+  private token?: string;
 
   /**
    *
    * @param client
    */
-  constructor(client: Client) {
-    this.client = client;
+  constructor(bot: Bot) {
+    this.bot = bot;
   }
 
   /**
@@ -36,7 +36,7 @@ export class VoiceConnection {
   private hearbeat(interval: number) {
     this.interval = setInterval(() => {
       console.log("Heartbeat", interval);
-      this.shard.send(
+      this.ws?.send(
         JSON.stringify({
           op: 0x000003,
           d: Date.now(),
@@ -71,7 +71,7 @@ export class VoiceConnection {
    * @param port
    */
   public protocol(selfIP: string, port: number) {
-    this.shard.send(
+    this.ws?.send(
       JSON.stringify({
         op: 0x000001,
         d: {
@@ -96,11 +96,14 @@ export class VoiceConnection {
    *
    * @param endpoint
    */
-  public connect(endpoint: string) {
-    this.shard = new WebSocket(endpoint);
+  public async connect(endpoint: string) {
+    this.ws = new WebSocket(endpoint);
 
-    this.shard.on("open", () => {
-      this.shard.send(
+    while (this.ws!.readyState !== WebSocket.OPEN) {}
+    console.log("Connected to voice server");
+
+    this.ws.on("open", () => {
+      this.ws?.send(
         JSON.stringify({
           op: this.code,
           d: {
@@ -113,22 +116,24 @@ export class VoiceConnection {
       );
     });
 
-    this.shard.on("error", (error) => {
+    this.ws.on("error", (error) => {
       console.log(error);
     });
 
-    this.shard.on("close", (code, reas) => {
+    this.ws.on("close", (code, reas) => {
       clearInterval(this.interval);
       this.interval = undefined;
+      this.ws = undefined;
     });
 
-    this.shard.on("message", (raw) => {
-      const { op, d } = JSON.parse(raw as unknown as string);
+    this.ws.on("message", (raw) => {
+      const { op, d } = JSON.parse(raw.toString()); // TODO: ai đó type hint ở đây sẽ khá tốt
       switch (op) {
         case 0x000002:
           this.ssrc = d.ssrc;
           this.port = d.port;
           this.ip = d.ip;
+          this.udp.startKeepAlive();
           this.udp.genesis();
           break;
         case 0x000008:
@@ -144,11 +149,11 @@ export class VoiceConnection {
   }
 
   public disconnect() {
-    this.shard.close();
+    this.ws?.close();
   }
   public setSpeaking(speaking: boolean) {
     // audio
-    this.shard.send(
+    this.ws?.send(
       JSON.stringify({
         op: 5,
         d: {

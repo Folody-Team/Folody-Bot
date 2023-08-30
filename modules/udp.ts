@@ -8,13 +8,13 @@ const MAX_COUNTER_VALUE = 2 ** 32 - 1;
 
 export default class Udp {
   public voiceConnection: VoiceConnection;
-  public nonce!: number;
+  public nonce = 0;
   public audioPacketizer: Packetizer;
   public ready = false;
 
   private blank = Buffer.alloc(74);
   private keepAliveCounter = 0;
-  private keepAliveInterval: NodeJS.Timeout;
+  private keepAliveInterval?: NodeJS.Timeout;
   private keepAliveBuffer: Buffer;
 
   public udp = createSocket("udp4");
@@ -26,13 +26,16 @@ export default class Udp {
     this.voiceConnection = voiceConnection;
     this.audioPacketizer = new Packetizer(this);
     this.keepAliveBuffer = Buffer.alloc(8);
+  }
+
+  public startKeepAlive() {
     this.keepAliveInterval = setInterval(
-      () => this.keepAlive(),
+      () => this._keepAlive(),
       KEEP_ALIVE_INTERVAL,
     );
   }
 
-  private keepAlive() {
+  private _keepAlive() {
     this.keepAliveBuffer.writeUInt16LE(this.keepAliveCounter, 0);
     this.udp.send(
       this.keepAliveBuffer,
@@ -56,7 +59,7 @@ export default class Udp {
       const port = data.readUint16BE(data.length - 2);
       this.voiceConnection.protocol(ip, port);
 
-      setImmediate(() => this.keepAlive()).unref();
+      setImmediate(() => this._keepAlive()).unref();
       // Handle packer này xong thì set event cho cái kia
       this.udp.on("message", this.message);
     });
@@ -71,7 +74,7 @@ export default class Udp {
 
     this.blank.writeUInt16BE(1, 0);
     this.blank.writeUInt16BE(70, 2);
-    this.blank.writeUInt32BE(this.voiceConnection.ssrc, 4);
+    this.blank.writeUInt32BE(this.voiceConnection.ssrc!, 4);
 
     this.udp.send(
       this.blank,
