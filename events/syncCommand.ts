@@ -7,12 +7,11 @@ export default new Event({
   once: true,
   async run(message) {
     if (
-      (process.env.Admins?.split(",") || ["487597510559531009"]).includes(
+      !(process.env.Admins?.split(",") || ["487597510559531009"]).includes(
         message.author.id,
-      ) &&
+      ) ||
       message.content !== `${userMention(message.client.user.id)} deploy`
     )
-      // hard code đê
       return;
 
     const bot = message.client as Bot;
