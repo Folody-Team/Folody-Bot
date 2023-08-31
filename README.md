@@ -5,6 +5,9 @@ This source code uses `ffmpeg` and some code from other sources such as `Google'
 # Structure
 ![Untitled-2023-08-31-1119](https://github.com/Folody-Team/Folody-Bot/assets/81029660/921f2db2-8bb9-4b34-8db9-90703bafa5d6)
 
+# Document
+Follow the [wiki](https://github.com/Folody-Team/Folody-Bot/wiki) to stay informed about the bot's latest updates and learn more about how it works and how it is structured.
+
 # Donate
 If you like us, you can donate through your bank account `0865753525` - MB Bank.
 
