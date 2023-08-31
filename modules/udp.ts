@@ -6,33 +6,30 @@ import { VoiceConnection } from "modules/voice";
 const KEEP_ALIVE_INTERVAL = 5e3;
 const MAX_COUNTER_VALUE = 2 ** 32 - 1;
 
-export default class Udp {
-  public voiceConnection: VoiceConnection;
-  public nonce = 0;
-  public audioPacketizer: Packetizer;
-  public ready = false;
+export default class UDP {
+  private port?: number;
+  private ip?: string;
+
+  private nonce = 0;
+  private audioPacketizer: Packetizer = new Packetizer(this);
+  private ready = false;
 
   private blank = Buffer.alloc(74);
   private keepAliveCounter = 0;
   private keepAliveInterval?: NodeJS.Timeout;
-  private keepAliveBuffer: Buffer;
+  private keepAliveBuffer: Buffer = Buffer.alloc(8);
 
   public udp = createSocket("udp4");
-  /**
-   *
-   * @param voiceConnection
-   */
-  constructor(voiceConnection: VoiceConnection) {
-    this.voiceConnection = voiceConnection;
-    this.audioPacketizer = new Packetizer(this);
-    this.keepAliveBuffer = Buffer.alloc(8);
+
+  constructor() {}
+
+  public init(voiceConnection: VoiceConnection) {
+    this.port = voiceConnection.port;
+    this.ip = voiceConnection.ip;
   }
 
   public startKeepAlive() {
-    this.keepAliveInterval = setInterval(
-      () => this._keepAlive(),
-      KEEP_ALIVE_INTERVAL,
-    );
+    this.keepAliveInterval = setInterval(this._keepAlive, KEEP_ALIVE_INTERVAL);
   }
 
   private _keepAlive() {
@@ -41,15 +38,15 @@ export default class Udp {
       this.keepAliveBuffer,
       0,
       this.keepAliveBuffer.length,
-      this.voiceConnection.port,
-      this.voiceConnection.ip,
+      this.port,
+      this.ip,
     );
     this.keepAliveCounter++;
     if (this.keepAliveCounter > MAX_COUNTER_VALUE) {
       this.keepAliveCounter = 0;
     }
   }
-  public genesis() {
+  public genesis(voiceConnection: VoiceConnection) {
     this.udp.once("message", (message) => {
       if (message.readUInt16BE(0) !== 2) {
         return console.log("wrong handshake packet for udp");
@@ -57,31 +54,27 @@ export default class Udp {
       const data = Buffer.from(message);
       const ip = data.subarray(8, data.indexOf(0, 8)).toString("utf-8");
       const port = data.readUint16BE(data.length - 2);
-      this.voiceConnection.protocol(ip, port);
+      voiceConnection.protocol(ip, port);
 
-      setImmediate(() => this._keepAlive()).unref();
+      setImmediate(this._keepAlive).unref();
       // Handle packer này xong thì set event cho cái kia
       this.udp.on("message", this.message);
     });
 
-    this.udp.on("close", () => {
-      console.log("udp closed");
-    });
+    this.udp.on("close", () => console.log("udp closed"));
 
-    this.udp.on("error", (error) => {
-      console.log(error);
-    });
+    this.udp.on("error", console.error);
 
     this.blank.writeUInt16BE(1, 0);
     this.blank.writeUInt16BE(70, 2);
-    this.blank.writeUInt32BE(this.voiceConnection.ssrc!, 4);
+    this.blank.writeUInt32BE(voiceConnection.ssrc!, 4);
 
     this.udp.send(
       this.blank,
       0,
       this.blank.length,
-      this.voiceConnection.port,
-      this.voiceConnection.ip,
+      this.port,
+      this.ip,
       (err: any, bytes: any) => {},
     );
   }
@@ -110,8 +103,8 @@ export default class Udp {
       packet,
       0,
       packet.length,
-      this.voiceConnection.port,
-      this.voiceConnection.ip,
+      this.port,
+      this.ip,
       (err: any, bytes: any) => {},
     );
 
@@ -119,6 +112,6 @@ export default class Udp {
   }
 
   public message(message: any) {
-    // console.log(message)
+    console.log(message);
   }
 }

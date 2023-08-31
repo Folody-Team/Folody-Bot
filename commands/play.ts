@@ -4,14 +4,12 @@ import {
   EmbedBuilder,
   Events,
   SlashCommandBuilder,
-  WebSocketShard,
   bold,
   inlineCode,
 } from "discord.js";
 import { Player } from "media/player";
 import Command from "models/command";
 import { specialCharacters } from "modules/misc";
-import { Loop } from "modules/music";
 
 // /**
 //  *
@@ -22,71 +20,17 @@ import { Loop } from "modules/music";
 //  * @param channel
 //  * @param gateway
 //  */
-function playMusic(
+async function playMusic(
   query: string,
   interaction: ChatInputCommandInteraction,
-  gateway: WebSocketShard,
 ) {
   const bot = interaction.client as Bot;
-  const guildID = interaction.guildId!;
-  const queue = bot.music.queues.get(guildID)!;
-  bot.music.api.download(query).then((stream) => {
-    const player = Player.create(stream, queue.voice.udp);
-    player.once("spawnProcess", () => {
-      queue.voice.setSpeaking(true);
-    });
 
-    player.on("finish", () => {
-      console.log("finish");
-      queue.voice.setSpeaking(false);
+  const stream = await bot.music.api.download(query);
 
-      if (queue.songs.length == 1 && queue.loop == Loop.Off) {
-        player.stop();
-        gateway.send({
-          op: 4,
-          d: {
-            guild_id: guildID,
-            channel_id: null,
-            self_mute: null,
-            self_deaf: null,
-          },
-        });
-        queue.voice.ws?.send(
-          JSON.stringify({
-            op: 4,
-            d: {
-              guild_id: guildID,
-              channel_id: null,
-              self_mute: null,
-              self_deaf: null,
-            },
-          }),
-        );
-        queue.songs.splice(0, queue.songs.length);
-        queue.voice.disconnect();
-        bot.music.queues.delete(guildID);
-      } else if (queue.songs.length > 1 && queue.loop == Loop.Off) {
-        queue.songs.shift();
+  const player = new Player();
 
-        playMusic(queue.songs[0].url, interaction, gateway);
-      } else if (queue.loop == Loop.Queue || queue.loop == Loop.Off) {
-        const lastQueueSong = queue.songs.shift();
-        if (queue.loop == Loop.Queue) {
-          if (lastQueueSong)
-            queue.songs.push({
-              ...lastQueueSong,
-            });
-        }
-
-        playMusic(queue.songs[0].url, interaction, gateway);
-      } else if (queue.loop == Loop.Song) {
-        playMusic(queue.songs[0].url, interaction, gateway);
-      } else {
-        console.log(queue.loop);
-      }
-    });
-    player.play();
-  });
+  player.play(stream);
 }
 
 const data = new SlashCommandBuilder()

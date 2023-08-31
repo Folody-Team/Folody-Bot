@@ -1,13 +1,13 @@
-import Udp from "modules/udp";
+import UDP from "modules/udp";
 import { Writable } from "stream";
 
 export default class Audio extends Writable {
-  udp?: Udp;
+  udp?: UDP;
   count: number;
   sleepTime: number;
   startTime: number = 0;
 
-  constructor(udp: Udp) {
+  constructor(udp: UDP) {
     super();
     this.udp = udp;
     this.count = 0;
@@ -34,9 +34,7 @@ export default class Audio extends Writable {
       next = (this.count + 1) * this.sleepTime - (Date.now() - this.startTime);
     }
 
-    setTimeout(() => {
-      callback();
-    }, next);
+    setTimeout(callback, next);
   }
 
   // @ts-ignore

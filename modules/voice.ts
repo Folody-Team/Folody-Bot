@@ -1,6 +1,6 @@
 import Bot from "bot";
-import { CorePlayer } from "media/player";
-import Udp from "modules/udp";
+import { Player } from "media/player";
+import UDP from "modules/udp";
 import { WebSocket } from "ws";
 
 export class VoiceConnection {
@@ -12,8 +12,8 @@ export class VoiceConnection {
   public ip?: string;
   public port?: number;
   public secretKey?: Uint8Array;
-  public udp = new Udp(this);
-  public player?: CorePlayer;
+  public udp = new UDP();
+  public player?: Player;
 
   private code = 0;
   private interval?: NodeJS.Timeout;
@@ -65,11 +65,6 @@ export class VoiceConnection {
     this.token = token;
   }
 
-  /**
-   *
-   * @param selfIP
-   * @param port
-   */
   public protocol(selfIP: string, port: number) {
     this.ws?.send(
       JSON.stringify({
@@ -85,17 +80,8 @@ export class VoiceConnection {
       }),
     );
   }
-  private secret(key: Uint8Array) {
-    this.secretKey = new Uint8Array(key);
-    if (this.udp) {
-      this.udp.ready = true;
-    }
-  }
+  private secret(key: Uint8Array) {}
 
-  /**
-   *
-   * @param endpoint
-   */
   public async connect(endpoint: string) {
     this.ws = new WebSocket(endpoint);
 
@@ -133,14 +119,15 @@ export class VoiceConnection {
           this.ssrc = d.ssrc;
           this.port = d.port;
           this.ip = d.ip;
+          this.udp.init(this);
           this.udp.startKeepAlive();
-          this.udp.genesis();
+          this.udp.genesis(this);
           break;
         case 0x000008:
           this.hearbeat(d.heartbeat_interval);
           break;
         case 0x000004:
-          this.secret(d.secret_key);
+          this.secretKey = new Uint8Array(d.secret_key);
           break;
         case 0x000006:
           break;

@@ -1,5 +1,5 @@
 import * as sodium from "libsodium-wrappers";
-import Udp from "modules/udp";
+import UDP from "modules/udp";
 
 export const max_int16bit = 2 ** 16 - 1;
 export const max_int32bit = 2 ** 32 - 1;
@@ -9,10 +9,10 @@ export default class Base {
   private _mtu: number;
   private _sequence: number;
   private _timestamp: number;
-  private _connection: Udp;
+  private _connection: UDP;
   private _extensionEnabled: boolean;
 
-  constructor(connection: Udp, payloadType: number, extensionEnabled = false) {
+  constructor(connection: UDP, payloadType: number, extensionEnabled = false) {
     this._connection = connection;
     this._payloadType = payloadType;
     this._sequence = 0;
@@ -95,7 +95,7 @@ export default class Base {
     );
   }
 
-  public get connection(): Udp {
+  public get connection(): UDP {
     return this._connection;
   }
 
