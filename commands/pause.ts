@@ -1,37 +1,27 @@
-import { ChatInputCommandInteraction, Client, SlashCommandBuilder, WebSocketShard } from "discord.js";
-import path from "path"
-import { Music } from "../function/Music";
+import Bot from "bot";
+import { SlashCommandBuilder } from "discord.js";
+import Command from "models/command";
 
-export default {
-    data: new SlashCommandBuilder()
-        .setName(path.basename(__filename).replace(/\.[^/.]+$/, ""))
-        .setDescription('Pause music'),
-    
-    /**
-     * 
-     * @param interaction 
-     * @param music 
-     * @param client 
-     * @returns 
-     */
-    exe: async (interaction: ChatInputCommandInteraction, music: Music, client: Client) => {
-        const url = interaction.options.getString('input')
-        const guild = interaction.guildId;
+export default new Command({
+  data: new SlashCommandBuilder()
+    .setName("pause")
+    .setDescription("Pause music"),
+  async run(interaction) {
+    const guildID = interaction.guildId;
+    if (!guildID) return;
+    const bot = interaction.client as Bot;
+    const queue = bot.music.queues.get(guildID);
 
-        if (!music.data.has(guild as string)) {
-            interaction.reply({
-                content: "Bot not in voice"
-            })
-        } else {
-            const queue = music.data.get(guild as string);
-            if(queue?.data.length == 0) {
-                return interaction.reply('Queue not found!')
-            }
-            queue?.voice.player?.pause()
-            interaction.reply({
-                content: "Pause music success"
-            })
-        }
-
+    if (!queue) {
+      interaction.reply({
+        content: "Bot not in voice",
+      });
+      return;
     }
-}
+
+    queue.voice.player?.pause();
+    interaction.reply({
+      content: "Pause music success",
+    });
+  },
+});
